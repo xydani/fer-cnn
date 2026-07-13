@@ -38,7 +38,7 @@ fer-cnn/
 
 **1. Clone the repository**
 ```bash
-git clone [https://github.com/xydani/fer-cnn.git](https://github.com/xydani/fer-cnn.git)
+git clone https://github.com/xydani/fer-cnn.git
 cd fer-cnn
 ```
 
