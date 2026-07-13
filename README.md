@@ -1,10 +1,6 @@
 # Facial Emotion Recognition: A Comparative Study between Custom CNNs and Fine-Tuned Xception
 
-![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
-![TensorFlow](https://img.shields.io/badge/TensorFlow-2.x-orange)
-![License](https://img.shields.io/badge/License-MIT-green)
-
-## 📌 Project Overview
+## Project Overview
 This repository contains the code and resources for a comparative study on Facial Emotion Recognition (FER). The goal is to classify human faces into 7 standard emotional categories (Angry, Disgust, Fear, Happy, Sad, Surprise, Neutral). 
 
 The project evaluates two distinct deep learning approaches:
@@ -15,7 +11,7 @@ A key focus of this research is assessing **Cross-Dataset Generalization**. The 
 
 ---
 
-## 📂 Repository Structure
+## Project Structure
 
 ```text
 ├── data/
@@ -34,5 +30,4 @@ A key focus of this research is assessing **Cross-Dataset Generalization**. The 
 │   ├── train.py              # Training script
 │   ├── evaluate.py           # Evaluation and benchmarking script
 │   └── utils.py              # Helper functions (seeds, plotters)
-├── requirements.txt          # Python dependencies
 └── README.md                 # Project documentation
