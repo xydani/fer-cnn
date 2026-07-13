@@ -31,6 +31,7 @@ fer-cnn/
 │   ├── train.py              # Training script
 │   ├── evaluate.py           # Evaluation and benchmarking script
 │   └── utils.py              # Helper functions (seeds, plotters)
+├── requirements.txt 
 └── README.md                 # Project documentation
 ```
 
