@@ -16,23 +16,24 @@ A key focus of this research is assessing **Cross-Dataset Generalization**. The 
 ```text
 fer-cnn/
 ├── data/
-│   ├── raw/                  # Original datasets (FER-2013, FANE)
-│   └── processed/            # Preprocessed images/tensors
-├── models_saved/             # Saved weights (.h5 or .keras) of trained models
+│   ├── raw/                        # Original datasets (FER-2013, FANE)
+│   └── processed/                  # Preprocessed images/tensors
+├── models_saved/                   # Saved weights (.h5 or .keras) of trained models
 ├── results/
-│   ├── figures/              # EDA plots, confusion matrices, loss curves
-│   └── metrics/              # Evaluation reports and CSV tables
-├── src/                      # Source code
-│   ├── config.py             # Global parameters and path definitions
-│   ├── data_loader.py        # Dataset loading and augmentation pipelines
-│   ├── eda.py                # Exploratory Data Analysis script
-│   ├── custom_cnn.py         # Custom CNN architecture definition
-│   ├── xception_finetune.py  # Transfer learning architecture definition
-│   ├── train.py              # Training script
-│   ├── evaluate.py           # Evaluation and benchmarking script
-│   └── utils.py              # Helper functions (seeds, plotters)
+│   ├── figures/                    # EDA plots, confusion matrices, loss curves
+│   └── metrics/                    # Evaluation reports and CSV tables
+├── src/                            # Source code
+│   ├── models/                     # Original datasets (FER-2013, FANE)
+│   │   ├── custom_cnn.py           # Custom CNN architecture definition
+│   │   └── xception_finetune.py    # Transfer learning architecture definition
+│   ├── data_loader.py              # Dataset loading and augmentation pipelines
+│   ├── eda.py                      # Exploratory Data Analysis script
+│   ├── train.py                    # Training script
+│   ├── evaluate.py                 # Evaluation and benchmarking script
+│   └── utils.py                    # Helper functions (seeds, plotters)
+├── config.py                       # Global parameters and path definitions
 ├── requirements.txt 
-└── README.md                 # Project documentation
+└── README.md                       # Project documentation
 ```
 
 ## Installation & Setup
