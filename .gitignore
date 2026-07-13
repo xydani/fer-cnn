@@ -1,3 +1,20 @@
+# Ignore raw and processed data
+data/raw/*
+data/processed/*
+
+# Ignore saved models and heavy weights
+models_saved/*
+
+# Ignore virtual environments
+venv/
+env/
+__pycache__/
+
+# Keep the folder structure by NOT ignoring the .gitkeep files
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!models_saved/.gitkeep
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
