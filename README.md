@@ -14,6 +14,7 @@ A key focus of this research is assessing **Cross-Dataset Generalization**. The 
 ## Project Structure
 
 ```text
+fer-cnn/
 ├── data/
 │   ├── raw/                  # Original datasets (FER-2013, FANE)
 │   └── processed/            # Preprocessed images/tensors
@@ -31,3 +32,37 @@ A key focus of this research is assessing **Cross-Dataset Generalization**. The 
 │   ├── evaluate.py           # Evaluation and benchmarking script
 │   └── utils.py              # Helper functions (seeds, plotters)
 └── README.md                 # Project documentation
+
+## ⚙️ Installation & Setup
+
+**1. Clone the repository**
+```bash
+git clone [https://github.com/your-username/fer-cnn.git](https://github.com/your-username/fer-cnn.git)
+cd fer-cnn
+
+**2. Create a virtual environment (Recommended)**
+On Linux/macOS:
+```bash
+python -m venv venv
+source venv/bin/activate
+
+On Windows:
+```bash
+python -m venv venv
+venv\Scripts\activate
+
+**3. Install dependencies**
+Install the required packages using the generated requirements.txt file:
+```bash
+pip install -r requirements.txt
+
+**4. Data Preparation**
+Ensure your folder structure matches the paths defined in the root config.py file. Place the downloaded FER-2013 and FANE datasets inside the data/raw/ directory:
+
+```text
+fer-cnn/
+├── config.py                 <-- Global parameters and paths
+├── data/
+│   ├── raw/                  <-- Extract FER-2013 and FANE here
+│   └── processed/            
+...
