@@ -36,6 +36,9 @@ fer-cnn/
 
 ## Installation & Setup
 
+> **NOTE:** This project has been done using **Python 3.11**.
+
+
 **1. Clone the repository**
 ```bash
 git clone https://github.com/xydani/fer-cnn.git
