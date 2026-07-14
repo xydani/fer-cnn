@@ -9,7 +9,7 @@ from config import IMG_SIZE, NUM_CLASSES
 L2 = regularizers.l2(1e-4)
 
 
-def build_improved_fer_cnn(input_shape=(IMG_SIZE[0], IMG_SIZE[1], 1)):
+def fer_resnet(input_shape=(IMG_SIZE[0], IMG_SIZE[1], 1)):
 
     def conv_bn_act(x, filters):
         x = layers.Conv2D(filters, (3, 3), padding='same', use_bias=False, kernel_regularizer=L2)(x)
@@ -53,9 +53,9 @@ def build_improved_fer_cnn(input_shape=(IMG_SIZE[0], IMG_SIZE[1], 1)):
 
     outputs = layers.Dense(NUM_CLASSES, activation='softmax', kernel_regularizer=L2)(x)
 
-    return models.Model(inputs, outputs, name="Improved_FER_CNN")
+    return models.Model(inputs, outputs, name="FER_ResNet")
 
 
 if __name__ == "__main__":
-    test_model = build_improved_fer_cnn()
+    test_model = fer_resnet()
     test_model.summary()

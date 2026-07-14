@@ -48,6 +48,7 @@ cd fer-cnn
 ```
 
 **2. Create a virtual environment (Recommended)**
+
 On Linux/macOS:
 ```bash
 python -m venv venv
@@ -61,12 +62,14 @@ venv\Scripts\activate
 ```
 
 **3. Install dependencies**
+
 Install the required packages using the generated requirements.txt file:
 ```bash
 pip install -r requirements.txt
 ```
 
 **4. Data Preparation**
+
 Ensure your folder structure matches the paths defined in the root config.py file. Place the downloaded FER-2013 and FANE datasets inside the data/raw/ directory:
 
 ```text
