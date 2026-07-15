@@ -29,8 +29,6 @@ def get_fer_datasets(model_type="custom_cnn", batch_size=BATCH_SIZE):
     color_mode, target_size = _get_target_config(model_type)
     normalize = _get_normalizer(model_type)
 
-    print(f"Loading FER-2013 for {model_type.upper()}...")
-
     train_dir = FER_DIR / "train"
     test_dir = FER_DIR / "test"
 
@@ -80,8 +78,6 @@ def get_fer_datasets(model_type="custom_cnn", batch_size=BATCH_SIZE):
 def get_fane_test_dataset(model_type="custom_cnn"):
     color_mode, target_size = _get_target_config(model_type)
     normalize = _get_normalizer(model_type)
-
-    print(f"Loading FANE (Test Only) for {model_type.upper()}...")
 
     fane_dataset = tf.keras.utils.image_dataset_from_directory(
         FANE_DIR,

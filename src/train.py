@@ -39,7 +39,6 @@ def main():
         loss="categorical_crossentropy",
         metrics=["accuracy"],
     )
-    model.summary()
 
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
     metrics_dir = RESULTS_DIR / "metrics"
@@ -65,9 +64,6 @@ def main():
     history_path = metrics_dir / f"{args.model}_history.json"
     with open(history_path, "w") as f:
         json.dump(history.history, f, indent=2)
-
-    print(f"Saved best model to {checkpoint_path}")
-    print(f"Saved training history to {history_path}")
 
 
 if __name__ == "__main__":
