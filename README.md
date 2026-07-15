@@ -19,6 +19,7 @@ fer-cnn/
 │   ├── raw/                        # Original datasets (FER-2013, FANE)
 │   └── processed/                  # Preprocessed images/tensors
 ├── models_saved/                   # Saved weights (.h5 or .keras) of trained models
+├── notebooks/                      # Colab notebooks for GPU training
 ├── results/
 │   ├── figures/                    # EDA plots, confusion matrices, loss curves
 │   └── metrics/                    # Evaluation reports and CSV tables
