@@ -25,7 +25,7 @@ def _get_normalizer(model_type):
     return lambda x, y: (x / 255.0, y)
 
 
-def get_fer_datasets(model_type="custom_cnn"):
+def get_fer_datasets(model_type="custom_cnn", batch_size=BATCH_SIZE):
     color_mode, target_size = _get_target_config(model_type)
     normalize = _get_normalizer(model_type)
 
@@ -52,7 +52,7 @@ def get_fer_datasets(model_type="custom_cnn"):
         label_mode="categorical",
         class_names=CLASS_NAMES,
         color_mode=color_mode,
-        batch_size=BATCH_SIZE,
+        batch_size=batch_size,
         image_size=target_size,
         shuffle=False,
         seed=SEED
@@ -63,7 +63,7 @@ def get_fer_datasets(model_type="custom_cnn"):
         .map(normalize, num_parallel_calls=AUTOTUNE)
         .cache()
         .shuffle(SHUFFLE_BUFFER, seed=SEED)
-        .batch(BATCH_SIZE)
+        .batch(batch_size)
         .prefetch(AUTOTUNE)
     )
 
