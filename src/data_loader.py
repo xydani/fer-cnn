@@ -32,7 +32,9 @@ def _build_augmenter():
     return tf.keras.Sequential(
         [
             layers.RandomFlip("horizontal", seed=SEED),
-            layers.RandomRotation(0.1, fill_mode="reflect", seed=SEED),
+            # Factor is a fraction of 2*pi: 0.03 is about +/-11 degrees, the usual
+            # range for faces. Larger tilts distort expression geometry.
+            layers.RandomRotation(0.03, fill_mode="reflect", seed=SEED),
             layers.RandomZoom(0.1, fill_mode="reflect", seed=SEED),
             layers.RandomTranslation(0.1, 0.1, fill_mode="reflect", seed=SEED),
         ],
