@@ -26,6 +26,29 @@ def _get_normalizer(model_type):
     return lambda x, y: (x / 255.0, y)
 
 
+def _drop_undecodable(dataset):
+    """Skip files TensorFlow cannot decode as images.
+
+    FANE ships `fane_data/happy/happy1283.jpg`, which is actually a Jupyter
+    notebook, and it crashes decoding. Deleting it locally is not enough - the
+    Colab notebook re-downloads the dataset from Kaggle every run. Applied to
+    the unbatched dataset on purpose: after `.batch()` a single bad file would
+    take its whole batch of good images down with it.
+    """
+    return dataset.ignore_errors(log_warning=True)
+
+
+def _finalize_eval_dataset(dataset, normalize, batch_size):
+    """Shared tail for val/test/FANE: no shuffling, no augmentation."""
+    return (
+        _drop_undecodable(dataset)
+        .map(normalize, num_parallel_calls=AUTOTUNE)
+        .cache()
+        .batch(batch_size)
+        .prefetch(AUTOTUNE)
+    )
+
+
 def _build_augmenter():
     # 'reflect' fill keeps synthetic borders inside the normalized range, which
     # differs between the two model branches ([0,1] vs [-1,1]).
@@ -74,7 +97,7 @@ def get_fer_datasets(model_type="custom_cnn", batch_size=BATCH_SIZE):
         label_mode="categorical",
         class_names=CLASS_NAMES,
         color_mode=color_mode,
-        batch_size=batch_size,
+        batch_size=None,
         image_size=target_size,
         shuffle=True,
         seed=SEED,
@@ -88,7 +111,7 @@ def get_fer_datasets(model_type="custom_cnn", batch_size=BATCH_SIZE):
         label_mode="categorical",
         class_names=CLASS_NAMES,
         color_mode=color_mode,
-        batch_size=batch_size,
+        batch_size=None,
         image_size=target_size,
         shuffle=False,
         seed=SEED
@@ -97,7 +120,7 @@ def get_fer_datasets(model_type="custom_cnn", batch_size=BATCH_SIZE):
     # Augmentation sits after cache/batch: caching it would freeze one set of
     # random transforms for every epoch, and batched calls are much cheaper.
     train_dataset = (
-        train_dataset
+        _drop_undecodable(train_dataset)
         .map(normalize, num_parallel_calls=AUTOTUNE)
         .cache()
         .shuffle(SHUFFLE_BUFFER, seed=SEED)
@@ -106,19 +129,8 @@ def get_fer_datasets(model_type="custom_cnn", batch_size=BATCH_SIZE):
         .prefetch(AUTOTUNE)
     )
 
-    val_dataset = (
-        val_dataset
-        .map(normalize, num_parallel_calls=AUTOTUNE)
-        .cache()
-        .prefetch(AUTOTUNE)
-    )
-
-    test_dataset = (
-        test_dataset
-        .map(normalize, num_parallel_calls=AUTOTUNE)
-        .cache()
-        .prefetch(AUTOTUNE)
-    )
+    val_dataset = _finalize_eval_dataset(val_dataset, normalize, batch_size)
+    test_dataset = _finalize_eval_dataset(test_dataset, normalize, batch_size)
 
     return train_dataset, val_dataset, test_dataset
 
@@ -133,15 +145,10 @@ def get_fane_test_dataset(model_type="custom_cnn"):
         label_mode="categorical",
         class_names=CLASS_NAMES,
         color_mode=color_mode,
-        batch_size=BATCH_SIZE,
+        batch_size=None,
         image_size=target_size,
         shuffle=False,
         seed=SEED
     )
 
-    return (
-        fane_dataset
-        .map(normalize, num_parallel_calls=AUTOTUNE)
-        .cache()
-        .prefetch(AUTOTUNE)
-    )
+    return _finalize_eval_dataset(fane_dataset, normalize, BATCH_SIZE)
