@@ -1,16 +1,53 @@
-"""Rete pre-addestrata (es. Xception) con fine-tuning per il confronto.
+"""Xception pre-addestrata su ImageNet, con fine-tuning, per il confronto."""
 
-TODO:
-- build_finetuned_model(): caricare Xception (o altra rete) pre-addestrata
-  su ImageNet senza il top, aggiungere un nuovo classificatore per
-  NUM_CLASSES, e sbloccare gli ultimi layer per il fine-tuning.
-  Nota: Xception richiede input RGB (non scala di grigi) e dimensioni
-  minime maggiori di 48x48, quindi le immagini andranno convertite e
-  ridimensionate rispetto a data_loader.py.
-"""
+import tensorflow as tf
+from tensorflow.keras import layers, models, regularizers
+import sys
+import os
 
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from config import NUM_CLASSES
 
+L2 = regularizers.l2(1e-4)
 
-def build_finetuned_model():
-    raise NotImplementedError
+# Start of Xception's last convolutional block. Everything before it stays
+# frozen: those filters are generic, and FER-2013 is far too small to retrain
+# 21M parameters without destroying them.
+FINE_TUNE_FROM = "block14_sepconv1"
+
+
+def build_finetuned_model(input_shape=(71, 71, 3), fine_tune_from=FINE_TUNE_FROM):
+    base = tf.keras.applications.Xception(
+        weights="imagenet",
+        include_top=False,
+        input_shape=input_shape,
+    )
+
+    base.trainable = False
+    reached = False
+    for layer in base.layers:
+        if layer.name == fine_tune_from:
+            reached = True
+        # BatchNorm stays frozen even inside the unfrozen tail: recomputing its
+        # statistics on FER-sized batches is the classic way to wreck the
+        # pretrained features it was calibrated against.
+        if reached and not isinstance(layer, layers.BatchNormalization):
+            layer.trainable = True
+
+    # The head mirrors fer_resnet()'s classifier so the comparison isolates the
+    # feature extractor rather than the classifier design.
+    x = layers.GlobalAveragePooling2D()(base.output)
+
+    x = layers.Dense(256, use_bias=False, kernel_regularizer=L2)(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.LeakyReLU(negative_slope=0.1)(x)
+    x = layers.Dropout(0.5)(x)
+
+    outputs = layers.Dense(NUM_CLASSES, activation="softmax", kernel_regularizer=L2)(x)
+
+    return models.Model(base.input, outputs, name="Xception_FineTuned")
+
+
+if __name__ == "__main__":
+    test_model = build_finetuned_model()
+    test_model.summary()
