@@ -19,5 +19,13 @@ CLASS_NAMES = ["angry", "disgust", "fear", "happy", "neutral", "sad", "surprise"
 # --- TRAINING HYPERPARAMETERS ---
 BATCH_SIZE = 64
 EPOCHS = 50
+
+# Trained from scratch, so it can take a large step size.
 LEARNING_RATE = 1e-3
+# Fine-tuning starts from ImageNet weights: a 1e-3 step would wash them out.
+LEARNING_RATE_FINETUNE = 1e-4
+
+# Carved out of FER-2013 train so the test set stays untouched until evaluation.
+VAL_SPLIT = 0.1
+
 SEED = 42

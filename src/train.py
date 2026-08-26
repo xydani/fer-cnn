@@ -4,7 +4,15 @@ import os
 import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from config import EPOCHS, BATCH_SIZE, LEARNING_RATE, MODELS_DIR, RESULTS_DIR, SEED
+from config import (
+    EPOCHS,
+    BATCH_SIZE,
+    LEARNING_RATE,
+    LEARNING_RATE_FINETUNE,
+    MODELS_DIR,
+    RESULTS_DIR,
+    SEED,
+)
 
 import tensorflow as tf
 
@@ -22,6 +30,11 @@ def build_model(model_type):
     raise ValueError(f"Unknown model type: {model_type}")
 
 
+def get_learning_rate(model_type):
+    # Fine-tuning needs the smaller step to preserve the pretrained features.
+    return LEARNING_RATE_FINETUNE if model_type == "xception" else LEARNING_RATE
+
+
 def main():
     parser = argparse.ArgumentParser(description="Train a FER model.")
     parser.add_argument("--model", choices=["custom_cnn", "xception"], default="custom_cnn")
@@ -31,11 +44,15 @@ def main():
 
     set_seed(SEED)
 
-    train_dataset, test_dataset = get_fer_datasets(model_type=args.model, batch_size=args.batch_size)
+    # The test set is deliberately left unused here: model selection happens on
+    # the validation split only, so evaluate.py reports an unbiased test score.
+    train_dataset, val_dataset, _ = get_fer_datasets(
+        model_type=args.model, batch_size=args.batch_size
+    )
 
     model = build_model(args.model)
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE),
+        optimizer=tf.keras.optimizers.Adam(learning_rate=get_learning_rate(args.model)),
         loss="categorical_crossentropy",
         metrics=["accuracy"],
     )
@@ -56,7 +73,7 @@ def main():
 
     history = model.fit(
         train_dataset,
-        validation_data=test_dataset,
+        validation_data=val_dataset,
         epochs=args.epochs,
         callbacks=callbacks,
     )
