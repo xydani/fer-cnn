@@ -1,9 +1,9 @@
-"""Analisi esplorativa del dataset (EDA), eseguibile come script.
+"""Exploratory data analysis, runnable as a script.
 
-Uso: python src/eda.py
+Usage: python src/eda.py
 
-Genera grafici (distribuzione delle classi, esempi di immagini per
-categoria) e li salva in results/figures/, senza bisogno di un notebook.
+Makes the plots (class distribution, sample images per class) and saves them
+in results/figures/, without needing a notebook.
 """
 
 import os

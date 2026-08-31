@@ -1,11 +1,11 @@
-"""Funzioni di supporto condivise (plotting, seed, salvataggio metriche)."""
+"""Shared helper functions (seed, plotting, saving metrics)."""
 
 import random
 import numpy as np
 
 
 def set_seed(seed: int = 42) -> None:
-    """Imposta il seed per numpy e random (e tensorflow se disponibile)."""
+    """Sets the seed for numpy and random (and tensorflow if available)."""
     random.seed(seed)
     np.random.seed(seed)
     try:

@@ -1,4 +1,4 @@
-"""Xception pre-addestrata su ImageNet, con fine-tuning, per il confronto."""
+"""Xception pretrained on ImageNet, fine-tuned, used for the comparison."""
 
 import tensorflow as tf
 from tensorflow.keras import layers, models, regularizers

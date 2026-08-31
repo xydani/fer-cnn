@@ -1,6 +1,6 @@
-"""Valutazione e confronto dei modelli su FER-2013 e FANE.
+"""Evaluates and compares the models on FER-2013 and FANE.
 
-Uso: python src/evaluate.py [--models custom_cnn xception]
+Usage: python src/evaluate.py [--models custom_cnn xception]
 """
 
 import argparse
