@@ -134,7 +134,51 @@ def plot_generalization_gap():
     plt.close(fig)
 
 
+def plot_epoch_budget_comparison():
+    """Custom CNN with a 50 and a 100 epoch cap, validation curves only.
+
+    Shows that the first run was still improving when it hit the cap, while the
+    second one stopped on its own.
+    """
+    runs = {}
+    for tag in ("50", "100"):
+        h = _load_json(METRICS_DIR / f"custom_cnn_history_{tag}.json")
+        if h is not None:
+            runs[tag] = h
+    if len(runs) < 2:
+        return
+
+    # grey for the run we discarded, blue for the one we kept
+    colours = {"50": "#8b929c", "100": SERIES["custom_cnn"]}
+
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4.5), dpi=150)
+    for tag, h in runs.items():
+        epochs = range(1, len(h["loss"]) + 1)
+        axes[0].plot(epochs, h["val_loss"], color=colours[tag], linewidth=2,
+                     label=f"cap {tag} epoche ({len(h['loss'])} eseguite)")
+        axes[1].plot(epochs, h["val_accuracy"], color=colours[tag], linewidth=2)
+
+        best = min(range(len(h["val_loss"])), key=lambda i: h["val_loss"][i])
+        axes[0].plot(best + 1, h["val_loss"][best], "o", color=colours[tag],
+                     markersize=7, markeredgecolor="white", markeredgewidth=1.5)
+        axes[1].plot(best + 1, h["val_accuracy"][best], "o", color=colours[tag],
+                     markersize=7, markeredgecolor="white", markeredgewidth=1.5)
+
+    for ax in axes:
+        ax.axvline(50, color="#c0c4cb", linewidth=1, linestyle=":")
+        ax.set_xlabel("Epoch")
+        _style_axis(ax)
+    axes[0].set_title("Validation loss", color=INK, fontsize=12)
+    axes[1].set_title("Validation accuracy", color=INK, fontsize=12)
+    axes[0].legend(frameon=False, fontsize=9, labelcolor=INK_MUTED)
+
+    fig.tight_layout()
+    fig.savefig(FIGURES_DIR / "epoch_budget_comparison.png", bbox_inches="tight")
+    plt.close(fig)
+
+
 if __name__ == "__main__":
     FIGURES_DIR.mkdir(parents=True, exist_ok=True)
     plot_training_curves()
     plot_generalization_gap()
+    plot_epoch_budget_comparison()
