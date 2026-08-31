@@ -31,7 +31,7 @@ def build_model(model_type):
 
 
 def get_learning_rate(model_type):
-    # Fine-tuning needs the smaller step to preserve the pretrained features.
+    # xception is fine-tuned, so it needs the smaller learning rate
     return LEARNING_RATE_FINETUNE if model_type == "xception" else LEARNING_RATE
 
 
@@ -44,8 +44,7 @@ def main():
 
     set_seed(SEED)
 
-    # The test set is deliberately left unused here: model selection happens on
-    # the validation split only, so evaluate.py reports an unbiased test score.
+    # we don't use the test set here, only the validation split
     train_dataset, val_dataset, _ = get_fer_datasets(
         model_type=args.model, batch_size=args.batch_size
     )

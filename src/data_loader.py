@@ -20,26 +20,25 @@ def _get_target_config(model_type):
 
 
 def _get_normalizer(model_type):
-    # Xception expects its own [-1, 1] preprocessing; the custom CNN just needs [0, 1].
+    # xception has its own preprocessing ([-1,1]), the custom cnn only needs [0,1]
     if model_type == "xception":
         return lambda x, y: (tf.keras.applications.xception.preprocess_input(x), y)
     return lambda x, y: (x / 255.0, y)
 
 
 def _drop_undecodable(dataset):
-    """Skip files TensorFlow cannot decode as images.
+    """Skips the files that cannot be decoded as images.
 
-    FANE ships `fane_data/happy/happy1283.jpg`, which is actually a Jupyter
-    notebook, and it crashes decoding. Deleting it locally is not enough - the
-    Colab notebook re-downloads the dataset from Kaggle every run. Applied to
-    the unbatched dataset on purpose: after `.batch()` a single bad file would
-    take its whole batch of good images down with it.
+    In FANE the file happy/happy1283.jpg is actually a notebook, not an image.
+    Deleting it locally is not enough because Colab downloads the dataset again
+    every time. It has to be done before batching, otherwise one bad file makes
+    us lose the whole batch.
     """
     return dataset.ignore_errors(log_warning=True)
 
 
 def _finalize_eval_dataset(dataset, normalize, batch_size):
-    """Shared tail for val/test/FANE: no shuffling, no augmentation."""
+    """Same pipeline for val, test and FANE: no shuffle and no augmentation."""
     return (
         _drop_undecodable(dataset)
         .map(normalize, num_parallel_calls=AUTOTUNE)
@@ -50,13 +49,12 @@ def _finalize_eval_dataset(dataset, normalize, batch_size):
 
 
 def _build_augmenter():
-    # 'reflect' fill keeps synthetic borders inside the normalized range, which
-    # differs between the two model branches ([0,1] vs [-1,1]).
+    # reflect fills the empty borders by mirroring, so we don't add values
+    # outside the normalized range (which is different for the two models)
     return tf.keras.Sequential(
         [
             layers.RandomFlip("horizontal", seed=SEED),
-            # Factor is a fraction of 2*pi: 0.03 is about +/-11 degrees, the usual
-            # range for faces. Larger tilts distort expression geometry.
+            # the factor is a fraction of 2*pi, so 0.03 is about +/-11 degrees
             layers.RandomRotation(0.03, fill_mode="reflect", seed=SEED),
             layers.RandomZoom(0.1, fill_mode="reflect", seed=SEED),
             layers.RandomTranslation(0.1, 0.1, fill_mode="reflect", seed=SEED),
@@ -73,10 +71,8 @@ def get_fer_datasets(model_type="custom_cnn", batch_size=BATCH_SIZE):
     train_dir = FER_DIR / "train"
     test_dir = FER_DIR / "test"
 
-    # Both calls must pass shuffle=True with the same seed: `shuffle` decides
-    # whether the file list is permuted *before* the split is sliced off, so a
-    # shuffled train call plus an unshuffled val call would slice two different
-    # orderings — overlapping subsets, and a val set that is one sorted class.
+    # both calls need shuffle=True and the same seed: the shuffle happens before
+    # the split, so with different settings the two subsets would overlap
     train_dataset = tf.keras.utils.image_dataset_from_directory(
         train_dir,
         labels="inferred",
@@ -117,8 +113,8 @@ def get_fer_datasets(model_type="custom_cnn", batch_size=BATCH_SIZE):
         seed=SEED
     )
 
-    # Augmentation sits after cache/batch: caching it would freeze one set of
-    # random transforms for every epoch, and batched calls are much cheaper.
+    # augmentation after cache and batch: before the cache every epoch would get
+    # the same transforms, and doing it on batches is faster
     train_dataset = (
         _drop_undecodable(train_dataset)
         .map(normalize, num_parallel_calls=AUTOTUNE)

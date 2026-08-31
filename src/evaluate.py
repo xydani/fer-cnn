@@ -9,7 +9,7 @@ import os
 import sys
 
 import matplotlib
-matplotlib.use("Agg")  # No display in Colab/headless runs.
+matplotlib.use("Agg")  # no display on Colab
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -33,12 +33,11 @@ LABELS = list(range(len(CLASS_NAMES)))
 
 
 def _predict(model, dataset):
-    """Collect true and predicted integer labels in a single pass.
+    """Returns the true labels and the predicted ones.
 
-    Done batch by batch rather than via `model.predict`: dropping undecodable
-    files leaves the dataset's cardinality unknown, which makes Keras warn about
-    running out of data. Reading labels and logits together also guarantees the
-    two arrays stay aligned.
+    Done batch by batch instead of model.predict because after dropping the
+    undecodable files Keras does not know how many batches there are and prints
+    a warning. This way labels and predictions also stay aligned for sure.
     """
     y_true, y_pred = [], []
     for images, labels in dataset:
@@ -64,10 +63,10 @@ def _per_class_report(y_true, y_pred):
 
 
 def plot_confusion_matrix(y_true, y_pred, title, output_path):
-    """Row-normalised confusion matrix: each row is a class's recall profile.
+    """Confusion matrix normalized by row, so every row sums to 1.
 
-    Normalising by row is what makes the two datasets comparable at all - raw
-    counts would just restate how differently FER-2013 and FANE are balanced.
+    With the raw counts we would mostly see that the two datasets have a
+    different number of images per class.
     """
     matrix = confusion_matrix(y_true, y_pred, labels=LABELS)
     row_totals = matrix.sum(axis=1, keepdims=True)
@@ -76,7 +75,6 @@ def plot_confusion_matrix(y_true, y_pred, title, output_path):
     )
 
     fig, ax = plt.subplots(figsize=(7.5, 6.5), dpi=150)
-    # Sequential single hue: this encodes magnitude, so it must not be a rainbow.
     image = ax.imshow(normalised, cmap="Blues", vmin=0, vmax=1)
 
     ax.set_xticks(LABELS, CLASS_NAMES, rotation=45, ha="right")
@@ -85,7 +83,7 @@ def plot_confusion_matrix(y_true, y_pred, title, output_path):
     ax.set_ylabel("True")
     ax.set_title(title, pad=12)
 
-    # Thin white separators so adjacent cells never bleed into each other.
+    # white lines between the cells
     ax.set_xticks(np.arange(-0.5, len(CLASS_NAMES), 1), minor=True)
     ax.set_yticks(np.arange(-0.5, len(CLASS_NAMES), 1), minor=True)
     ax.grid(which="minor", color="white", linewidth=2)
@@ -99,7 +97,7 @@ def plot_confusion_matrix(y_true, y_pred, title, output_path):
             ax.text(
                 j, i, f"{value:.2f}",
                 ha="center", va="center", fontsize=9,
-                # Flip the ink once the fill is dark enough to swallow dark text.
+                # white text on the dark cells, otherwise it is unreadable
                 color="white" if value > 0.5 else "#1f2933",
             )
 
@@ -113,7 +111,7 @@ def plot_confusion_matrix(y_true, y_pred, title, output_path):
 
 
 def evaluate_model(model_type, figures_dir, metrics_dir):
-    """Evaluate one checkpoint on FER-2013 test and on FANE; return summary rows."""
+    """Evaluates one model on the FER-2013 test set and on FANE."""
     model = tf.keras.models.load_model(MODELS_DIR / f"{model_type}.keras")
 
     _, _, fer_test = get_fer_datasets(model_type=model_type)
@@ -125,8 +123,8 @@ def evaluate_model(model_type, figures_dir, metrics_dir):
 
         report = {
             "accuracy": float(accuracy_score(y_true, y_pred)),
-            # Macro-F1 weights every class equally, so it stays comparable across
-            # two datasets whose class priors differ.
+            # macro-F1 gives the same weight to every class, so we can compare
+            # it between the two datasets
             "macro_f1": float(f1_score(y_true, y_pred, labels=LABELS, average="macro", zero_division=0)),
             "weighted_f1": float(f1_score(y_true, y_pred, labels=LABELS, average="weighted", zero_division=0)),
             "per_class": _per_class_report(y_true, y_pred),
@@ -154,7 +152,7 @@ def evaluate_model(model_type, figures_dir, metrics_dir):
 
 
 def build_gap_table(comparison):
-    """Per-model drop from FER-2013 to FANE - the cross-dataset result."""
+    """Drop from FER-2013 to FANE for each model."""
     gaps = []
     for model_type, group in comparison.groupby("model", sort=False):
         scores = group.set_index("dataset")

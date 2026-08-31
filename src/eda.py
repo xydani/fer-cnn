@@ -11,7 +11,7 @@ import random
 import sys
 
 import matplotlib
-matplotlib.use("Agg")  # No display in Colab/headless runs.
+matplotlib.use("Agg")  # no display on Colab
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -22,7 +22,7 @@ from config import CLASS_NAMES, FANE_DIR, FER_DIR, RESULTS_DIR, SEED
 
 from utils import set_seed
 
-# Slot 1 and 2 of the categorical palette, in fixed order.
+# blue for FER-2013, orange for FANE
 SERIES = ("#2a78d6", "#eb6834")
 INK = "#0b0b0b"
 INK_MUTED = "#52514e"
@@ -37,11 +37,11 @@ SPLITS = {
 
 
 def _class_paths(split_dir, class_name):
-    """JPEG files for one class, skipping anything that is not really a JPEG.
+    """Returns the jpg files of one class, skipping the ones that are not jpg.
 
-    FANE ships a Jupyter notebook renamed to `happy/happy1283.jpg`; sampling it
-    into the grid would crash, and counting it would overstate the class by one.
-    Checking the magic bytes is enough here - both datasets are JPEG-only.
+    In FANE there is a notebook renamed to happy/happy1283.jpg: if we pick it for
+    the grid the script crashes, and it would also add 1 to the count. Checking
+    the first bytes is enough because both datasets only contain jpg files.
     """
     paths = []
     for path in sorted((split_dir / class_name).glob("*.jpg")):
@@ -56,7 +56,7 @@ def _class_counts(split_dir):
 
 
 def _style_axis(ax):
-    """Recessive axes: the bars carry the data, the frame should not compete."""
+    """Removes the extra spines and leaves only a light horizontal grid."""
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     ax.spines["left"].set_visible(False)
@@ -73,7 +73,7 @@ def plot_class_distribution():
     for ax, (split_name, split_counts) in zip(axes, counts.items()):
         values = [split_counts[name] for name in CLASS_NAMES]
         ax.bar(CLASS_NAMES, values, color=SERIES[0], width=0.65)
-        # One series per panel, so label the bars directly instead of a legend.
+        # write the value on top of each bar
         for x, value in enumerate(values):
             ax.text(x, value, f"{value:,}", ha="center", va="bottom",
                     fontsize=8, color=INK_MUTED)
@@ -87,9 +87,8 @@ def plot_class_distribution():
     fig.savefig(RESULTS_DIR / "figures" / "class_distribution.png", bbox_inches="tight")
     plt.close(fig)
 
-    # Proportions, not counts: this is the prior shift that makes raw accuracy
-    # incomparable between the two datasets, and the reason evaluate.py reports
-    # macro-F1 alongside it.
+    # same thing in percentage instead of counts, to show that the two datasets
+    # have a very different class balance
     fig, ax = plt.subplots(figsize=(10, 5), dpi=150)
     compared = ["FER-2013 train", "FANE"]
     width = 0.38
@@ -119,11 +118,10 @@ def plot_class_distribution():
 
 
 def plot_sample_images(samples_per_class=SAMPLES_PER_CLASS):
-    """One row of random examples per class, for each dataset.
+    """One row of random examples per class, for FER-2013 and for FANE.
 
-    Kept side by side because the visual gap between FER-2013's tight 48x48
-    grayscale crops and FANE's larger colour photographs *is* the domain shift
-    the study measures.
+    Useful to see the difference between the two datasets: FER-2013 is 48x48
+    grayscale, FANE has bigger colour photos.
     """
     for split_name in ("FER-2013 train", "FANE"):
         split_dir = SPLITS[split_name]

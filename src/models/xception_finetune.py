@@ -10,9 +10,8 @@ from config import NUM_CLASSES
 
 L2 = regularizers.l2(1e-4)
 
-# Start of Xception's last convolutional block. Everything before it stays
-# frozen: those filters are generic, and FER-2013 is far too small to retrain
-# 21M parameters without destroying them.
+# last conv block of Xception: we train only from here on, FER-2013 is too
+# small to retrain 21M parameters
 FINE_TUNE_FROM = "block14_sepconv1"
 
 
@@ -28,14 +27,12 @@ def build_finetuned_model(input_shape=(71, 71, 3), fine_tune_from=FINE_TUNE_FROM
     for layer in base.layers:
         if layer.name == fine_tune_from:
             reached = True
-        # BatchNorm stays frozen even inside the unfrozen tail: recomputing its
-        # statistics on FER-sized batches is the classic way to wreck the
-        # pretrained features it was calibrated against.
+        # BatchNorm stays frozen anyway: if it recomputes the statistics on our
+        # small batches it ruins the pretrained weights
         if reached and not isinstance(layer, layers.BatchNormalization):
             layer.trainable = True
 
-    # The head mirrors fer_resnet()'s classifier so the comparison isolates the
-    # feature extractor rather than the classifier design.
+    # same head as fer_resnet, so the comparison is only about the feature extractor
     x = layers.GlobalAveragePooling2D()(base.output)
 
     x = layers.Dense(256, use_bias=False, kernel_regularizer=L2)(x)
