@@ -69,6 +69,14 @@ def plot_class_distribution():
     """Class counts per split, plus the FER-2013 vs FANE balance comparison."""
     counts = {name: _class_counts(path) for name, path in SPLITS.items()}
 
+    # without this the empty split only shows up later as a division by zero
+    for split_name, split_counts in counts.items():
+        if sum(split_counts.values()) == 0:
+            raise SystemExit(
+                f"no images found for {split_name} in {SPLITS[split_name]}, "
+                f"the folder should hold one subfolder per class"
+            )
+
     fig, axes = plt.subplots(1, len(counts), figsize=(15, 4.5), dpi=150)
     for ax, (split_name, split_counts) in zip(axes, counts.items()):
         values = [split_counts[name] for name in CLASS_NAMES]

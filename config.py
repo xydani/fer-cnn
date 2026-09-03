@@ -4,8 +4,27 @@ from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parent
 DATA_RAW_DIR = ROOT_DIR / "data" / "raw"
-FER_DIR = DATA_RAW_DIR / "fer-2013"  
-FANE_DIR = DATA_RAW_DIR / "fane_data"
+
+
+def _dataset_root(root, expected):
+    """Returns the folder that really holds `expected`.
+
+    Kaggle archives sometimes wrap everything in one or two extra directories,
+    so data/raw/fane_data/happy on a local copy can end up as
+    data/raw/fane_data/FANE/happy after unzipping on Colab. If nothing matches
+    we return the folder unchanged, so the usual "not found" error still shows.
+    """
+    if (root / expected).is_dir():
+        return root
+    for pattern in (f"*/{expected}", f"*/*/{expected}"):
+        for candidate in sorted(root.glob(pattern)):
+            if candidate.is_dir():
+                return candidate.parent
+    return root
+
+
+FER_DIR = _dataset_root(DATA_RAW_DIR / "fer-2013", "train")
+FANE_DIR = _dataset_root(DATA_RAW_DIR / "fane_data", "happy")
 
 MODELS_DIR = ROOT_DIR / "models_saved"
 RESULTS_DIR = ROOT_DIR / "results"
