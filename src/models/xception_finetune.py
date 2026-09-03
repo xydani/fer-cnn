@@ -13,6 +13,10 @@ L2 = regularizers.l2(1e-4)
 # small to retrain 21M parameters
 FINE_TUNE_FROM = "block14_sepconv1"
 
+# pass this instead of a layer name to train the whole base, which is the
+# full fine-tuning setup we compare against the partial one
+FINE_TUNE_ALL = "all"
+
 
 def build_finetuned_model(input_shape=(71, 71, 3), fine_tune_from=FINE_TUNE_FROM):
     base = tf.keras.applications.Xception(
@@ -54,12 +58,15 @@ def build_finetuned_model(input_shape=(71, 71, 3), fine_tune_from=FINE_TUNE_FROM
 
 
 def unfreeze_from(model, fine_tune_from=FINE_TUNE_FROM):
-    reached = False
+    # with "all" every layer is already past the starting point
+    reached = fine_tune_from == FINE_TUNE_ALL
     for layer in model.layers:
         if layer.name == fine_tune_from:
             reached = True
         if reached and not isinstance(layer, layers.BatchNormalization):
             layer.trainable = True
+    if not reached:
+        raise ValueError(f"{fine_tune_from} is not a layer of {model.name}")
     return model
 
 

@@ -1,6 +1,9 @@
-"""Evaluates and compares the models on FER-2013 and FANE.
+"""Evaluates and compares the trained runs on FER-2013 and FANE.
 
-Usage: python src/evaluate.py [--models custom_cnn xception]
+Usage: python src/evaluate.py [--runs custom_cnn_bs64 xception_full_bs32]
+
+With no arguments it evaluates every checkpoint in models_saved/ that has a
+matching history file, which is what the notebook does at the end.
 """
 
 import argparse
@@ -30,6 +33,42 @@ from utils import set_seed
 
 MODEL_TYPES = ["custom_cnn", "xception"]
 LABELS = list(range(len(CLASS_NAMES)))
+
+METRICS_DIR = RESULTS_DIR / "metrics"
+FIGURES_DIR = RESULTS_DIR / "figures"
+
+
+def load_run_config(run_name):
+    """Reads back what train.py recorded about a run.
+
+    The architecture is stored in the history file, so the run name itself is
+    free to describe the experiment instead of the model.
+    """
+    path = METRICS_DIR / f"{run_name}_history.json"
+    if not path.exists():
+        return None
+    with open(path) as f:
+        history = json.load(f)
+    model_type = history.get("model", run_name)
+    if model_type not in MODEL_TYPES:
+        return None
+    return {
+        "run": run_name,
+        "model": model_type,
+        "batch_size": history.get("batch_size"),
+        "fine_tune_from": history.get("fine_tune_from"),
+        "warmup_epochs": history.get("warmup_epochs", 0),
+        "trainable_params": history.get("trainable_params"),
+        "total_params": history.get("total_params"),
+    }
+
+
+def discover_runs():
+    """Every saved checkpoint that we also have a history file for."""
+    return sorted(
+        path.stem for path in MODELS_DIR.glob("*.keras")
+        if (METRICS_DIR / f"{path.stem}_history.json").exists()
+    )
 
 
 def _predict(model, dataset):
@@ -110,15 +149,28 @@ def plot_confusion_matrix(y_true, y_pred, title, output_path):
     plt.close(fig)
 
 
-def evaluate_model(model_type, figures_dir, metrics_dir):
-    """Evaluates one model on the FER-2013 test set and on FANE."""
-    model = tf.keras.models.load_model(MODELS_DIR / f"{model_type}.keras")
+def get_eval_datasets(model_type, cache):
+    """Test sets for one architecture, built once and reused across runs.
 
-    _, _, fer_test = get_fer_datasets(model_type=model_type)
-    datasets = {"fer2013": fer_test, "fane": get_fane_test_dataset(model_type)}
+    Several runs share the same architecture and differ only in how they were
+    trained, so decoding FANE again for each of them would be wasted time.
+    """
+    if model_type not in cache:
+        _, _, fer_test = get_fer_datasets(model_type=model_type)
+        cache[model_type] = {
+            "fer2013": fer_test,
+            "fane": get_fane_test_dataset(model_type),
+        }
+    return cache[model_type]
+
+
+def evaluate_run(config, cache):
+    """Evaluates one run on the FER-2013 test set and on FANE."""
+    run_name = config["run"]
+    model = tf.keras.models.load_model(MODELS_DIR / f"{run_name}.keras")
 
     rows = []
-    for dataset_name, dataset in datasets.items():
+    for dataset_name, dataset in get_eval_datasets(config["model"], cache).items():
         y_true, y_pred = _predict(model, dataset)
 
         report = {
@@ -130,18 +182,20 @@ def evaluate_model(model_type, figures_dir, metrics_dir):
             "per_class": _per_class_report(y_true, y_pred),
         }
 
-        with open(metrics_dir / f"{model_type}_{dataset_name}_report.json", "w") as f:
+        with open(METRICS_DIR / f"{run_name}_{dataset_name}_report.json", "w") as f:
             json.dump(report, f, indent=2)
 
         plot_confusion_matrix(
             y_true,
             y_pred,
-            f"{model_type} on {dataset_name}",
-            figures_dir / f"{model_type}_{dataset_name}_confusion.png",
+            f"{run_name} on {dataset_name}",
+            FIGURES_DIR / f"{run_name}_{dataset_name}_confusion.png",
         )
 
         rows.append({
-            "model": model_type,
+            "run": run_name,
+            "model": config["model"],
+            "batch_size": config["batch_size"],
             "dataset": dataset_name,
             "accuracy": report["accuracy"],
             "macro_f1": report["macro_f1"],
@@ -152,14 +206,16 @@ def evaluate_model(model_type, figures_dir, metrics_dir):
 
 
 def build_gap_table(comparison):
-    """Drop from FER-2013 to FANE for each model."""
+    """Drop from FER-2013 to FANE for each run."""
     gaps = []
-    for model_type, group in comparison.groupby("model", sort=False):
+    for run_name, group in comparison.groupby("run", sort=False):
         scores = group.set_index("dataset")
         if not {"fer2013", "fane"}.issubset(scores.index):
             continue
         gaps.append({
-            "model": model_type,
+            "run": run_name,
+            "model": group["model"].iloc[0],
+            "batch_size": group["batch_size"].iloc[0],
             "accuracy_fer2013": scores.loc["fer2013", "accuracy"],
             "accuracy_fane": scores.loc["fane", "accuracy"],
             "accuracy_drop": scores.loc["fer2013", "accuracy"] - scores.loc["fane", "accuracy"],
@@ -171,34 +227,39 @@ def build_gap_table(comparison):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Evaluate and compare FER models.")
-    parser.add_argument("--models", nargs="+", choices=MODEL_TYPES, default=MODEL_TYPES)
+    parser = argparse.ArgumentParser(description="Evaluate and compare FER runs.")
+    parser.add_argument("--runs", nargs="+", default=None)
     args = parser.parse_args()
 
     set_seed(SEED)
 
-    figures_dir = RESULTS_DIR / "figures"
-    metrics_dir = RESULTS_DIR / "metrics"
-    figures_dir.mkdir(parents=True, exist_ok=True)
-    metrics_dir.mkdir(parents=True, exist_ok=True)
+    FIGURES_DIR.mkdir(parents=True, exist_ok=True)
+    METRICS_DIR.mkdir(parents=True, exist_ok=True)
+
+    run_names = args.runs if args.runs is not None else discover_runs()
 
     rows = []
-    for model_type in args.models:
-        if not (MODELS_DIR / f"{model_type}.keras").exists():
-            print(f"skipping {model_type}: no checkpoint in {MODELS_DIR}")
+    cache = {}
+    for run_name in run_names:
+        if not (MODELS_DIR / f"{run_name}.keras").exists():
+            print(f"skipping {run_name}: no checkpoint in {MODELS_DIR}")
             continue
-        rows.extend(evaluate_model(model_type, figures_dir, metrics_dir))
+        config = load_run_config(run_name)
+        if config is None:
+            print(f"skipping {run_name}: no usable history in {METRICS_DIR}")
+            continue
+        rows.extend(evaluate_run(config, cache))
 
     if not rows:
-        raise SystemExit(f"no trained models found in {MODELS_DIR}; run src/train.py first")
+        raise SystemExit(f"no trained runs found in {MODELS_DIR}; run src/train.py first")
 
     comparison = pd.DataFrame(rows)
-    comparison.to_csv(metrics_dir / "comparison.csv", index=False)
+    comparison.to_csv(METRICS_DIR / "comparison.csv", index=False)
     print(comparison.to_string(index=False, float_format="%.4f"))
 
     gaps = build_gap_table(comparison)
     if not gaps.empty:
-        gaps.to_csv(metrics_dir / "generalization_gap.csv", index=False)
+        gaps.to_csv(METRICS_DIR / "generalization_gap.csv", index=False)
         print()
         print(gaps.to_string(index=False, float_format="%.4f"))
 

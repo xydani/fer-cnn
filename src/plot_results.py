@@ -1,3 +1,12 @@
+"""Draws the figures that describe single runs.
+
+Usage: python src/plot_results.py [--runs custom_cnn xception]
+
+The cross-run comparisons (batch size, fine-tuning strategy) live in
+src/compare_runs.py instead.
+"""
+
+import argparse
 import json
 import os
 import sys
@@ -13,11 +22,15 @@ from config import RESULTS_DIR
 # same colours as eda.py: blue for the custom cnn, orange for xception
 SERIES = {"custom_cnn": "#2a78d6", "xception": "#eb6834"}
 LABELS = {"custom_cnn": "Custom CNN", "xception": "Xception"}
+# used when the runs cannot be told apart by architecture, e.g. two batch sizes
+PALETTE = ["#2a78d6", "#eb6834", "#2f9e6f", "#8b5cd6"]
 INK = "#0b0b0b"
 INK_MUTED = "#52514e"
 
 METRICS_DIR = RESULTS_DIR / "metrics"
 FIGURES_DIR = RESULTS_DIR / "figures"
+
+DEFAULT_RUNS = ["custom_cnn", "xception"]
 
 
 def _style_axis(ax):
@@ -37,25 +50,50 @@ def _load_json(path):
         return json.load(f)
 
 
-def plot_training_curves():
+def _architecture(run, history):
+    return history.get("model", run)
+
+
+def _colours(runs, histories):
+    """Blue and orange when the runs are one per architecture, a cycle otherwise."""
+    models = [_architecture(run, histories[run]) for run in runs]
+    if len(set(models)) == len(models) and all(model in SERIES for model in models):
+        return {run: SERIES[model] for run, model in zip(runs, models)}
+    return {run: PALETTE[i % len(PALETTE)] for i, run in enumerate(runs)}
+
+
+def _label(run, history):
+    """The plain model name for the canonical runs, the run name otherwise."""
+    model = _architecture(run, history)
+    if run == model:
+        return LABELS.get(model, run)
+    return run.replace("_", " ")
+
+
+def plot_training_curves(runs=DEFAULT_RUNS):
     histories = {}
-    for model in SERIES:
-        h = _load_json(METRICS_DIR / f"{model}_history.json")
-        if h is not None:
-            histories[model] = h
+    for run in runs:
+        history = _load_json(METRICS_DIR / f"{run}_history.json")
+        if history is not None:
+            histories[run] = history
     if not histories:
         return
 
+    runs = list(histories)
+    colours = _colours(runs, histories)
+
     fig, axes = plt.subplots(1, 2, figsize=(12, 4.5), dpi=150)
 
-    for model, h in histories.items():
-        colour = SERIES[model]
+    for run in runs:
+        h = histories[run]
+        colour = colours[run]
+        label = _label(run, h)
         epochs = range(1, len(h["loss"]) + 1)
         # dashed = training, solid = validation
         axes[0].plot(epochs, h["loss"], color=colour, linestyle="--",
-                     linewidth=1.2, alpha=0.65, label=f"{LABELS[model]} · train")
+                     linewidth=1.2, alpha=0.65, label=f"{label} · train")
         axes[0].plot(epochs, h["val_loss"], color=colour, linewidth=2,
-                     label=f"{LABELS[model]} · val")
+                     label=f"{label} · val")
         axes[1].plot(epochs, h["accuracy"], color=colour, linestyle="--",
                      linewidth=1.2, alpha=0.65)
         axes[1].plot(epochs, h["val_accuracy"], color=colour, linewidth=2)
@@ -89,28 +127,32 @@ def plot_training_curves():
     plt.close(fig)
 
 
-def plot_generalization_gap():
-    """Slope chart: macro-F1 on FER-2013 and on FANE for each model."""
-    scores = {}
-    for model in SERIES:
+def plot_generalization_gap(runs=DEFAULT_RUNS):
+    """Slope chart: macro-F1 on FER-2013 and on FANE for each run."""
+    scores, histories = {}, {}
+    for run in runs:
+        history = _load_json(METRICS_DIR / f"{run}_history.json")
         values = {}
         for dataset in ("fer2013", "fane"):
-            report = _load_json(METRICS_DIR / f"{model}_{dataset}_report.json")
+            report = _load_json(METRICS_DIR / f"{run}_{dataset}_report.json")
             if report is not None:
                 values[dataset] = report["macro_f1"]
-        if len(values) == 2:
-            scores[model] = values
+        if len(values) == 2 and history is not None:
+            scores[run] = values
+            histories[run] = history
     if not scores:
         return
 
+    colours = _colours(list(scores), histories)
+
     fig, ax = plt.subplots(figsize=(7, 5.5), dpi=150)
 
-    for model, values in scores.items():
-        colour = SERIES[model]
+    for run, values in scores.items():
+        colour = colours[run]
         start, end = values["fer2013"], values["fane"]
         ax.plot([0, 1], [start, end], color=colour, linewidth=2.5,
                 marker="o", markersize=9, markeredgecolor="white",
-                markeredgewidth=2, label=LABELS[model])
+                markeredgewidth=2, label=_label(run, histories[run]))
         # offsets in points, so the labels never collide with the axis
         ax.annotate(f"{start:.3f}", (0, start), textcoords="offset points",
                     xytext=(-12, 0), ha="right", va="center", fontsize=10, color=INK)
@@ -134,14 +176,13 @@ def plot_generalization_gap():
     plt.close(fig)
 
 
-def plot_epoch_budget_comparison():
-    runs = {}
-    for tag in ("50", "100"):
-        h = _load_json(METRICS_DIR / f"custom_cnn_history_{tag}.json")
-        if h is not None:
-            runs[tag] = h
-    if len(runs) < 2:
+def plot_epoch_budget_comparison(long_run="custom_cnn"):
+    """The 50-epoch cap against the 100-epoch one, both on the custom CNN."""
+    short = _load_json(METRICS_DIR / "custom_cnn_history_50.json")
+    long = _load_json(METRICS_DIR / f"{long_run}_history.json")
+    if short is None or long is None:
         return
+    runs = {"50": short, "100": long}
 
     # grey for the run we discarded, blue for the one we kept
     colours = {"50": "#8b929c", "100": SERIES["custom_cnn"]}
@@ -172,8 +213,19 @@ def plot_epoch_budget_comparison():
     plt.close(fig)
 
 
-if __name__ == "__main__":
+def main():
+    parser = argparse.ArgumentParser(description="Draw the per-run figures.")
+    parser.add_argument("--runs", nargs="+", default=DEFAULT_RUNS)
+    # the run to compare against the old 50-epoch one, which was trained at
+    # batch size 64, so passing a batch 32 run here would change two things
+    parser.add_argument("--epoch_budget_run", default="custom_cnn")
+    args = parser.parse_args()
+
     FIGURES_DIR.mkdir(parents=True, exist_ok=True)
-    plot_training_curves()
-    plot_generalization_gap()
-    plot_epoch_budget_comparison()
+    plot_training_curves(args.runs)
+    plot_generalization_gap(args.runs)
+    plot_epoch_budget_comparison(args.epoch_budget_run)
+
+
+if __name__ == "__main__":
+    main()
