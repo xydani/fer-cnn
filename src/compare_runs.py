@@ -137,6 +137,7 @@ def _bar_panel(ax, families, values, labels, colours, title, tick_labels=None):
     if tick_labels is None:
         tick_labels = [f.replace("_", "\n") for f in families]
     ax.set_xticks(positions, tick_labels, fontsize=9)
+    ax.set_ylim(0, max(max(series) for series in values.values()) * 1.25)
     ax.set_title(title, color=INK, fontsize=12)
     _style_axis(ax)
 
@@ -148,7 +149,8 @@ def plot_batch_size_comparison(runs):
         return
 
     families = list(dict.fromkeys(paired["family"]))
-    fig, axes = plt.subplots(1, 2, figsize=(12, 4.8), dpi=150)
+    panel_width = max(3.2, 1.6 * len(families))
+    fig, axes = plt.subplots(1, 2, figsize=(2 * panel_width + 1.5, 4.8), dpi=150)
 
     for ax, dataset in zip(axes, DATASETS):
         values = {}
