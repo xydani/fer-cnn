@@ -56,16 +56,6 @@ def build_finetuned_model(input_shape=(71, 71, 3), fine_tune_from=FINE_TUNE_FROM
 
 
 def unfreeze_from(model, fine_tune_from=FINE_TUNE_FROM):
-    """Makes the layers from `fine_tune_from` onwards trainable.
-
-    The layers are in order from input to output, so once we meet the chosen one
-    everything after it belongs to the part we want to train. BatchNorm is never
-    touched: the ones in the base must keep using the ImageNet statistics, and
-    the one in the head is already trainable.
-
-    The model has to be compiled again after this, otherwise Keras keeps using
-    the list of weights it collected the previous time.
-    """
     reached = False
     for layer in model.layers:
         if layer.name == fine_tune_from:

@@ -22,8 +22,6 @@ from models.custom_cnn import fer_resnet
 from models.xception_finetune import build_finetuned_model, unfreeze_from
 from utils import set_seed
 
-# progress bar in a terminal, one line per epoch when the output is piped, which
-# is what happens in the notebook. the bar would print one line per step there
 VERBOSE = 1 if sys.stdout.isatty() else 2
 
 
@@ -61,13 +59,6 @@ def fit_one_phase(model, train_dataset, val_dataset, epochs, learning_rate, call
 
 
 def fit_two_phase(model, train_dataset, val_dataset, epochs, warmup_epochs, callbacks):
-    """Trains the head first, then unfreezes the top of the base.
-
-    The head starts from random weights, so in the first epochs the gradients are
-    large. Letting them reach the pretrained weights straight away can damage
-    them before the head has learned anything, which is what this warm-up avoids.
-    The base is frozen during phase one, so a normal learning rate is fine there.
-    """
     warmup = model.fit(
         train_dataset,
         validation_data=val_dataset,
