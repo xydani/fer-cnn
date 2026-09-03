@@ -22,6 +22,10 @@ from models.custom_cnn import fer_resnet
 from models.xception_finetune import build_finetuned_model, unfreeze_from
 from utils import set_seed
 
+# progress bar in a terminal, one line per epoch when the output is piped, which
+# is what happens in the notebook. the bar would print one line per step there
+VERBOSE = 1 if sys.stdout.isatty() else 2
+
 
 def build_model(model_type):
     if model_type == "custom_cnn":
@@ -51,6 +55,7 @@ def fit_one_phase(model, train_dataset, val_dataset, epochs, learning_rate, call
         validation_data=val_dataset,
         epochs=epochs,
         callbacks=callbacks,
+        verbose=VERBOSE,
     )
     return history.history
 
@@ -67,6 +72,7 @@ def fit_two_phase(model, train_dataset, val_dataset, epochs, warmup_epochs, call
         train_dataset,
         validation_data=val_dataset,
         epochs=warmup_epochs,
+        verbose=VERBOSE,
     )
 
     unfreeze_from(model)
@@ -80,6 +86,7 @@ def fit_two_phase(model, train_dataset, val_dataset, epochs, warmup_epochs, call
         epochs=epochs,
         initial_epoch=warmup_epochs,
         callbacks=callbacks,
+        verbose=VERBOSE,
     )
 
     # one single curve per metric, so the plots do not have to know about phases
