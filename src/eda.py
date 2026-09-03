@@ -1,11 +1,3 @@
-"""Exploratory data analysis, runnable as a script.
-
-Usage: python src/eda.py
-
-Makes the plots (class distribution, sample images per class) and saves them
-in results/figures/, without needing a notebook.
-"""
-
 import os
 import random
 import sys
@@ -36,12 +28,6 @@ SPLITS = {
 
 
 def _class_paths(split_dir, class_name):
-    """Returns the jpg files of one class, skipping the ones that are not jpg.
-
-    In FANE there is a notebook renamed to happy/happy1283.jpg: if we pick it for
-    the grid the script crashes, and it would also add 1 to the count. Checking
-    the first bytes is enough because both datasets only contain jpg files.
-    """
     paths = []
     for path in sorted((split_dir / class_name).glob("*.jpg")):
         with open(path, "rb") as f:
@@ -55,7 +41,6 @@ def _class_counts(split_dir):
 
 
 def _style_axis(ax):
-    """Removes the extra spines and leaves only a light horizontal grid."""
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     ax.spines["left"].set_visible(False)
@@ -65,7 +50,6 @@ def _style_axis(ax):
 
 
 def plot_class_distribution():
-    """Class counts per split, plus the FER-2013 vs FANE balance comparison."""
     counts = {name: _class_counts(path) for name, path in SPLITS.items()}
 
     for split_name, split_counts in counts.items():
@@ -121,11 +105,6 @@ def plot_class_distribution():
 
 
 def plot_sample_images(samples_per_class=SAMPLES_PER_CLASS):
-    """One row of random examples per class, for FER-2013 and for FANE.
-
-    Useful to see the difference between the two datasets: FER-2013 is 48x48
-    grayscale, FANE has bigger colour photos.
-    """
     for split_name in ("FER-2013 train", "FANE"):
         split_dir = SPLITS[split_name]
         fig, axes = plt.subplots(

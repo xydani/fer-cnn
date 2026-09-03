@@ -1,12 +1,3 @@
-"""Puts every run of the study side by side.
-
-Usage: python src/compare_runs.py
-
-Reads whatever train.py and evaluate.py left in results/metrics/ and writes the
-tables and figures that answer the two comparison questions of the report, how
-much of Xception is worth unfreezing and whether the batch size matters.
-"""
-
 import json
 import math
 import os
@@ -48,7 +39,6 @@ def _load_json(path):
 
 
 def _family(run_name, batch_size):
-    """The run name without the batch size, so the two sizes pair up."""
     suffix = f"_bs{batch_size}"
     if batch_size is not None and run_name.endswith(suffix):
         return run_name[: -len(suffix)]
@@ -56,18 +46,12 @@ def _family(run_name, batch_size):
 
 
 def _confidence_interval(accuracy, n):
-    """Half width of the 95% normal-approximation interval on the accuracy.
-
-    Reported so a small difference between two runs can be read as noise
-    instead of as a result.
-    """
     if not n:
         return float("nan")
     return 1.96 * math.sqrt(accuracy * (1 - accuracy) / n)
 
 
 def collect_runs():
-    """One row per run, joining the training history and the two evaluations."""
     rows = []
     for path in sorted(METRICS_DIR.glob("*_history.json")):
         history = _load_json(path)
@@ -122,7 +106,6 @@ def collect_runs():
 
 
 def build_batch_size_table(runs):
-    """One row per family, with the two batch sizes side by side."""
     metrics = ["accuracy_fer2013", "macro_f1_fer2013", "accuracy_fane",
                "macro_f1_fane", "best_val_loss"]
     rows = []
@@ -157,7 +140,6 @@ def _bar_panel(ax, families, values, labels, colours, title, tick_labels=None):
 
 
 def plot_batch_size_comparison(runs):
-    """Grouped bars: every family at batch size 32 and at 64."""
     paired = runs[runs.groupby("family")["batch_size"].transform("nunique") == 2]
     if paired.empty:
         print("no family was trained at both batch sizes, skipping the batch size figure")
@@ -183,12 +165,6 @@ def plot_batch_size_comparison(runs):
 
 
 def strategy_subset(runs):
-    """The Xception runs at one single batch size, ordered by trainable share.
-
-    Comparing the strategies at whichever batch size each one liked best would
-    change two things at once, so we fix the size that validated better on
-    average and let only the strategy vary.
-    """
     xception = runs[runs["model"] == "xception"]
     if xception.empty:
         return None, None
@@ -198,7 +174,6 @@ def strategy_subset(runs):
 
 
 def plot_finetune_strategy(runs):
-    """The Xception strategies ordered by how much of the network they train."""
     subset, batch_size = strategy_subset(runs)
     if subset is None or len(subset) < 2:
         return
@@ -224,7 +199,6 @@ def plot_finetune_strategy(runs):
 
 
 def plot_strategy_curves(runs):
-    """Validation curves of the Xception strategies, at the same batch size."""
     subset, batch_size = strategy_subset(runs)
     if subset is None or len(subset) < 2:
         return

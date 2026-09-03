@@ -26,18 +26,10 @@ def _get_normalizer(model_type):
 
 
 def _drop_undecodable(dataset):
-    """Skips the files that cannot be decoded as images.
-
-    In FANE the file happy/happy1283.jpg is actually a notebook, not an image.
-    Deleting it locally is not enough because Colab downloads the dataset again
-    every time. It has to be done before batching, otherwise one bad file makes
-    us lose the whole batch.
-    """
     return dataset.ignore_errors(log_warning=True)
 
 
 def _finalize_eval_dataset(dataset, normalize, batch_size):
-    """Same pipeline for val, test and FANE: no shuffle and no augmentation."""
     return (
         _drop_undecodable(dataset)
         .map(normalize, num_parallel_calls=AUTOTUNE)

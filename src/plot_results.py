@@ -1,11 +1,3 @@
-"""Draws the figures that describe single runs.
-
-Usage: python src/plot_results.py [--runs custom_cnn xception]
-
-The cross-run comparisons (batch size, fine-tuning strategy) live in
-src/compare_runs.py instead.
-"""
-
 import argparse
 import json
 import os
@@ -53,7 +45,6 @@ def _architecture(run, history):
 
 
 def _colours(runs, histories):
-    """Blue and orange when the runs are one per architecture, a cycle otherwise."""
     models = [_architecture(run, histories[run]) for run in runs]
     if len(set(models)) == len(models) and all(model in SERIES for model in models):
         return {run: SERIES[model] for run, model in zip(runs, models)}
@@ -61,7 +52,6 @@ def _colours(runs, histories):
 
 
 def _label(run, history):
-    """The plain model name for the canonical runs, the run name otherwise."""
     model = _architecture(run, history)
     if run == model:
         return LABELS.get(model, run)
@@ -123,7 +113,6 @@ def plot_training_curves(runs=DEFAULT_RUNS):
 
 
 def plot_generalization_gap(runs=DEFAULT_RUNS):
-    """Slope chart: macro-F1 on FER-2013 and on FANE for each run."""
     scores, histories = {}, {}
     for run in runs:
         history = _load_json(METRICS_DIR / f"{run}_history.json")
@@ -171,7 +160,6 @@ def plot_generalization_gap(runs=DEFAULT_RUNS):
 
 
 def plot_epoch_budget_comparison(long_run="custom_cnn"):
-    """The 50-epoch cap against the 100-epoch one, both on the custom CNN."""
     short = _load_json(METRICS_DIR / "custom_cnn_history_50.json")
     long = _load_json(METRICS_DIR / f"{long_run}_history.json")
     if short is None or long is None:

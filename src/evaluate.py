@@ -1,11 +1,3 @@
-"""Evaluates and compares the trained runs on FER-2013 and FANE.
-
-Usage: python src/evaluate.py [--runs custom_cnn_bs64 xception_full_bs32]
-
-With no arguments it evaluates every checkpoint in models_saved/ that has a
-matching history file, which is what the notebook does at the end.
-"""
-
 import argparse
 import json
 import os
@@ -39,11 +31,6 @@ FIGURES_DIR = RESULTS_DIR / "figures"
 
 
 def load_run_config(run_name):
-    """Reads back what train.py recorded about a run.
-
-    The architecture is stored in the history file, so the run name itself is
-    free to describe the experiment instead of the model.
-    """
     path = METRICS_DIR / f"{run_name}_history.json"
     if not path.exists():
         return None
@@ -64,7 +51,6 @@ def load_run_config(run_name):
 
 
 def discover_runs():
-    """Every saved checkpoint that we also have a history file for."""
     return sorted(
         path.stem for path in MODELS_DIR.glob("*.keras")
         if (METRICS_DIR / f"{path.stem}_history.json").exists()
@@ -72,12 +58,6 @@ def discover_runs():
 
 
 def _predict(model, dataset):
-    """Returns the true labels and the predicted ones.
-
-    Done batch by batch instead of model.predict because after dropping the
-    undecodable files Keras does not know how many batches there are and prints
-    a warning. This way labels and predictions also stay aligned for sure.
-    """
     y_true, y_pred = [], []
     for images, labels in dataset:
         probabilities = model(images, training=False)
@@ -102,11 +82,6 @@ def _per_class_report(y_true, y_pred):
 
 
 def plot_confusion_matrix(y_true, y_pred, title, output_path):
-    """Confusion matrix normalized by row, so every row sums to 1.
-
-    With the raw counts we would mostly see that the two datasets have a
-    different number of images per class.
-    """
     matrix = confusion_matrix(y_true, y_pred, labels=LABELS)
     row_totals = matrix.sum(axis=1, keepdims=True)
     normalised = np.divide(
@@ -148,11 +123,6 @@ def plot_confusion_matrix(y_true, y_pred, title, output_path):
 
 
 def get_eval_datasets(model_type, cache):
-    """Test sets for one architecture, built once and reused across runs.
-
-    Several runs share the same architecture and differ only in how they were
-    trained, so decoding FANE again for each of them would be wasted time.
-    """
     if model_type not in cache:
         _, _, fer_test = get_fer_datasets(model_type=model_type)
         cache[model_type] = {
@@ -163,7 +133,6 @@ def get_eval_datasets(model_type, cache):
 
 
 def evaluate_run(config, cache):
-    """Evaluates one run on the FER-2013 test set and on FANE."""
     run_name = config["run"]
     model = tf.keras.models.load_model(MODELS_DIR / f"{run_name}.keras")
 
@@ -202,7 +171,6 @@ def evaluate_run(config, cache):
 
 
 def build_gap_table(comparison):
-    """Drop from FER-2013 to FANE for each run."""
     gaps = []
     for run_name, group in comparison.groupby("run", sort=False):
         scores = group.set_index("dataset")
