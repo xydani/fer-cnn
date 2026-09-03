@@ -1,5 +1,3 @@
-"""Xception pretrained on ImageNet, fine-tuned, used for the comparison."""
-
 import tensorflow as tf
 from tensorflow.keras import layers, models, regularizers
 import sys

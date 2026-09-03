@@ -1,11 +1,3 @@
-"""Plots for the results section: training curves and generalization gap.
-
-Usage: python src/plot_results.py
-
-Reads the json files in results/metrics/ and saves the figures in
-results/figures/. It does not need the models, only the saved metrics.
-"""
-
 import json
 import os
 import sys
@@ -29,7 +21,6 @@ FIGURES_DIR = RESULTS_DIR / "figures"
 
 
 def _style_axis(ax):
-    """Removes the extra spines and leaves only a light horizontal grid."""
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     ax.spines["left"].set_visible(False)
@@ -47,7 +38,6 @@ def _load_json(path):
 
 
 def plot_training_curves():
-    """Loss and accuracy per epoch, train vs validation, for both models."""
     histories = {}
     for model in SERIES:
         h = _load_json(METRICS_DIR / f"{model}_history.json")
@@ -145,11 +135,6 @@ def plot_generalization_gap():
 
 
 def plot_epoch_budget_comparison():
-    """Custom CNN with a 50 and a 100 epoch cap, validation curves only.
-
-    Shows that the first run was still improving when it hit the cap, while the
-    second one stopped on its own.
-    """
     runs = {}
     for tag in ("50", "100"):
         h = _load_json(METRICS_DIR / f"custom_cnn_history_{tag}.json")

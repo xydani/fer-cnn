@@ -1,5 +1,3 @@
-"""Central configuration for paths and hyperparameters."""
-
 from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parent
@@ -7,13 +5,6 @@ DATA_RAW_DIR = ROOT_DIR / "data" / "raw"
 
 
 def _dataset_root(root, expected):
-    """Returns the folder that really holds `expected`.
-
-    Kaggle archives sometimes wrap everything in one or two extra directories,
-    so data/raw/fane_data/happy on a local copy can end up as
-    data/raw/fane_data/FANE/happy after unzipping on Colab. If nothing matches
-    we return the folder unchanged, so the usual "not found" error still shows.
-    """
     if (root / expected).is_dir():
         return root
     for pattern in (f"*/{expected}", f"*/*/{expected}"):
