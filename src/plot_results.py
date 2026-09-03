@@ -12,17 +12,15 @@ import os
 import sys
 
 import matplotlib
-matplotlib.use("Agg")  # no display on Colab
+matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import RESULTS_DIR
 
-# same colours as eda.py: blue for the custom cnn, orange for xception
 SERIES = {"custom_cnn": "#2a78d6", "xception": "#eb6834"}
 LABELS = {"custom_cnn": "Custom CNN", "xception": "Xception"}
-# used when the runs cannot be told apart by architecture, e.g. two batch sizes
 PALETTE = ["#2a78d6", "#eb6834", "#2f9e6f", "#8b5cd6"]
 INK = "#0b0b0b"
 INK_MUTED = "#52514e"
@@ -89,7 +87,6 @@ def plot_training_curves(runs=DEFAULT_RUNS):
         colour = colours[run]
         label = _label(run, h)
         epochs = range(1, len(h["loss"]) + 1)
-        # dashed = training, solid = validation
         axes[0].plot(epochs, h["loss"], color=colour, linestyle="--",
                      linewidth=1.2, alpha=0.65, label=f"{label} · train")
         axes[0].plot(epochs, h["val_loss"], color=colour, linewidth=2,
@@ -98,14 +95,12 @@ def plot_training_curves(runs=DEFAULT_RUNS):
                      linewidth=1.2, alpha=0.65)
         axes[1].plot(epochs, h["val_accuracy"], color=colour, linewidth=2)
 
-        # mark the epoch that EarlyStopping restored
         best = min(range(len(h["val_loss"])), key=lambda i: h["val_loss"][i])
         axes[0].plot(best + 1, h["val_loss"][best], "o", color=colour,
                      markersize=7, markeredgecolor="white", markeredgewidth=1.5)
         axes[1].plot(best + 1, h["val_accuracy"][best], "o", color=colour,
                      markersize=7, markeredgecolor="white", markeredgewidth=1.5)
 
-        # where the frozen head phase ends and fine-tuning starts
         warmup = h.get("warmup_epochs")
         if warmup:
             for ax in axes:
@@ -153,7 +148,6 @@ def plot_generalization_gap(runs=DEFAULT_RUNS):
         ax.plot([0, 1], [start, end], color=colour, linewidth=2.5,
                 marker="o", markersize=9, markeredgecolor="white",
                 markeredgewidth=2, label=_label(run, histories[run]))
-        # offsets in points, so the labels never collide with the axis
         ax.annotate(f"{start:.3f}", (0, start), textcoords="offset points",
                     xytext=(-12, 0), ha="right", va="center", fontsize=10, color=INK)
         ax.annotate(f"{end:.3f}", (1, end), textcoords="offset points",
@@ -184,7 +178,6 @@ def plot_epoch_budget_comparison(long_run="custom_cnn"):
         return
     runs = {"50": short, "100": long}
 
-    # grey for the run we discarded, blue for the one we kept
     colours = {"50": "#8b929c", "100": SERIES["custom_cnn"]}
 
     fig, axes = plt.subplots(1, 2, figsize=(12, 4.5), dpi=150)
@@ -216,8 +209,6 @@ def plot_epoch_budget_comparison(long_run="custom_cnn"):
 def main():
     parser = argparse.ArgumentParser(description="Draw the per-run figures.")
     parser.add_argument("--runs", nargs="+", default=DEFAULT_RUNS)
-    # the run to compare against the old 50-epoch one, which was trained at
-    # batch size 64, so passing a batch 32 run here would change two things
     parser.add_argument("--epoch_budget_run", default="custom_cnn")
     args = parser.parse_args()
 

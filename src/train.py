@@ -34,7 +34,6 @@ def build_model(model_type, fine_tune_from=FINE_TUNE_FROM):
 
 
 def get_learning_rate(model_type):
-    # xception is fine-tuned, so it needs the smaller learning rate
     return LEARNING_RATE_FINETUNE if model_type == "xception" else LEARNING_RATE
 
 
@@ -68,8 +67,6 @@ def fit_two_phase(model, train_dataset, val_dataset, epochs, warmup_epochs,
     )
 
     unfreeze_from(model, fine_tune_from)
-    # compiling again is required, otherwise Keras keeps the old weight list and
-    # the layers we just unfroze would not receive any update
     compile_model(model, LEARNING_RATE_FINETUNE)
 
     finetune = model.fit(
@@ -81,28 +78,22 @@ def fit_two_phase(model, train_dataset, val_dataset, epochs, warmup_epochs,
         verbose=VERBOSE,
     )
 
-    # one single curve per metric, so the plots do not have to know about phases
     return {k: warmup.history[k] + finetune.history[k] for k in warmup.history}
 
 
 def main():
     parser = argparse.ArgumentParser(description="Train a FER model.")
     parser.add_argument("--model", choices=["custom_cnn", "xception"], default="custom_cnn")
-    # names the checkpoint and the history file, so runs that differ only in
-    # batch size or fine-tuning depth do not overwrite each other
     parser.add_argument("--run_name", default=None)
     parser.add_argument("--epochs", type=int, default=EPOCHS)
     parser.add_argument("--batch_size", type=int, default=BATCH_SIZE)
-    # xception only, 0 disables the warm-up and trains in a single phase
     parser.add_argument("--warmup_epochs", type=int, default=WARMUP_EPOCHS)
-    # xception only: layer the training starts from, or "all" for full fine-tuning
     parser.add_argument("--fine_tune_from", default=FINE_TUNE_FROM)
     args = parser.parse_args()
 
     run_name = args.run_name or args.model
     set_seed(SEED)
 
-    # we don't use the test set here, only the validation split
     train_dataset, val_dataset, _ = get_fer_datasets(
         model_type=args.model, batch_size=args.batch_size
     )
@@ -123,12 +114,10 @@ def main():
 
     warmup_epochs = args.warmup_epochs if args.model == "xception" else 0
     if 0 < args.epochs <= warmup_epochs:
-        # the second phase would run zero epochs and return an empty history
         raise SystemExit(
             f"--warmup_epochs ({warmup_epochs}) must be smaller than --epochs ({args.epochs})")
 
     if warmup_epochs > 0:
-        # build it with the base completely frozen, phase two unfreezes the tail
         model = build_finetuned_model(fine_tune_from=None)
         compile_model(model, LEARNING_RATE)
         history = fit_two_phase(
@@ -142,8 +131,6 @@ def main():
             get_learning_rate(args.model), callbacks,
         )
 
-    # counted after training, so for a two-phase run we record the second phase,
-    # which is the setting the run is actually named after
     total_params, trainable_params = count_parameters(model)
     history.update({
         "run_name": run_name,
@@ -157,7 +144,6 @@ def main():
     if args.model == "xception":
         history["fine_tune_from"] = args.fine_tune_from
     if warmup_epochs > 0:
-        # lets the plots mark where the second phase starts
         history["warmup_epochs"] = warmup_epochs
 
     history_path = metrics_dir / f"{run_name}_history.json"

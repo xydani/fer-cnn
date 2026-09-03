@@ -12,7 +12,7 @@ import os
 import sys
 
 import matplotlib
-matplotlib.use("Agg")  # no display on Colab
+matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -122,7 +122,6 @@ def plot_confusion_matrix(y_true, y_pred, title, output_path):
     ax.set_ylabel("True")
     ax.set_title(title, pad=12)
 
-    # white lines between the cells
     ax.set_xticks(np.arange(-0.5, len(CLASS_NAMES), 1), minor=True)
     ax.set_yticks(np.arange(-0.5, len(CLASS_NAMES), 1), minor=True)
     ax.grid(which="minor", color="white", linewidth=2)
@@ -136,7 +135,6 @@ def plot_confusion_matrix(y_true, y_pred, title, output_path):
             ax.text(
                 j, i, f"{value:.2f}",
                 ha="center", va="center", fontsize=9,
-                # white text on the dark cells, otherwise it is unreadable
                 color="white" if value > 0.5 else "#1f2933",
             )
 
@@ -175,8 +173,6 @@ def evaluate_run(config, cache):
 
         report = {
             "accuracy": float(accuracy_score(y_true, y_pred)),
-            # macro-F1 gives the same weight to every class, so we can compare
-            # it between the two datasets
             "macro_f1": float(f1_score(y_true, y_pred, labels=LABELS, average="macro", zero_division=0)),
             "weighted_f1": float(f1_score(y_true, y_pred, labels=LABELS, average="weighted", zero_division=0)),
             "per_class": _per_class_report(y_true, y_pred),

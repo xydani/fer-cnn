@@ -11,7 +11,7 @@ import random
 import sys
 
 import matplotlib
-matplotlib.use("Agg")  # no display on Colab
+matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -22,7 +22,6 @@ from config import CLASS_NAMES, FANE_DIR, FER_DIR, RESULTS_DIR, SEED
 
 from utils import set_seed
 
-# blue for FER-2013, orange for FANE
 SERIES = ("#2a78d6", "#eb6834")
 INK = "#0b0b0b"
 INK_MUTED = "#52514e"
@@ -69,7 +68,6 @@ def plot_class_distribution():
     """Class counts per split, plus the FER-2013 vs FANE balance comparison."""
     counts = {name: _class_counts(path) for name, path in SPLITS.items()}
 
-    # without this the empty split only shows up later as a division by zero
     for split_name, split_counts in counts.items():
         if sum(split_counts.values()) == 0:
             raise SystemExit(
@@ -81,7 +79,6 @@ def plot_class_distribution():
     for ax, (split_name, split_counts) in zip(axes, counts.items()):
         values = [split_counts[name] for name in CLASS_NAMES]
         ax.bar(CLASS_NAMES, values, color=SERIES[0], width=0.65)
-        # write the value on top of each bar
         for x, value in enumerate(values):
             ax.text(x, value, f"{value:,}", ha="center", va="bottom",
                     fontsize=8, color=INK_MUTED)
@@ -95,8 +92,6 @@ def plot_class_distribution():
     fig.savefig(RESULTS_DIR / "figures" / "class_distribution.png", bbox_inches="tight")
     plt.close(fig)
 
-    # same thing in percentage instead of counts, to show that the two datasets
-    # have a very different class balance
     fig, ax = plt.subplots(figsize=(10, 5), dpi=150)
     compared = ["FER-2013 train", "FANE"]
     width = 0.38

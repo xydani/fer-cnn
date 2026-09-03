@@ -20,7 +20,6 @@ def _get_target_config(model_type):
 
 
 def _get_normalizer(model_type):
-    # xception has its own preprocessing ([-1,1]), the custom cnn only needs [0,1]
     if model_type == "xception":
         return lambda x, y: (tf.keras.applications.xception.preprocess_input(x), y)
     return lambda x, y: (x / 255.0, y)
@@ -49,12 +48,9 @@ def _finalize_eval_dataset(dataset, normalize, batch_size):
 
 
 def _build_augmenter():
-    # reflect fills the empty borders by mirroring, so we don't add values
-    # outside the normalized range (which is different for the two models)
     return tf.keras.Sequential(
         [
             layers.RandomFlip("horizontal", seed=SEED),
-            # the factor is a fraction of 2*pi, so 0.03 is about +/-11 degrees
             layers.RandomRotation(0.03, fill_mode="reflect", seed=SEED),
             layers.RandomZoom(0.1, fill_mode="reflect", seed=SEED),
             layers.RandomTranslation(0.1, 0.1, fill_mode="reflect", seed=SEED),
@@ -71,8 +67,6 @@ def get_fer_datasets(model_type="custom_cnn", batch_size=BATCH_SIZE):
     train_dir = FER_DIR / "train"
     test_dir = FER_DIR / "test"
 
-    # both calls need shuffle=True and the same seed: the shuffle happens before
-    # the split, so with different settings the two subsets would overlap
     train_dataset = tf.keras.utils.image_dataset_from_directory(
         train_dir,
         labels="inferred",
@@ -113,8 +107,6 @@ def get_fer_datasets(model_type="custom_cnn", batch_size=BATCH_SIZE):
         seed=SEED
     )
 
-    # augmentation after cache and batch: before the cache every epoch would get
-    # the same transforms, and doing it on batches is faster
     train_dataset = (
         _drop_undecodable(train_dataset)
         .map(normalize, num_parallel_calls=AUTOTUNE)

@@ -13,7 +13,7 @@ import os
 import sys
 
 import matplotlib
-matplotlib.use("Agg")  # no display on Colab
+matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -26,7 +26,6 @@ METRICS_DIR = RESULTS_DIR / "metrics"
 FIGURES_DIR = RESULTS_DIR / "figures"
 
 DATASETS = ("fer2013", "fane")
-# blue for FER-2013, orange for FANE, same pairing used everywhere else
 DATASET_COLOURS = {"fer2013": "#2a78d6", "fane": "#eb6834"}
 DATASET_LABELS = {"fer2013": "FER-2013 test", "fane": "FANE"}
 BATCH_COLOURS = {32: "#8b5cd6", 64: "#2f9e6f"}
@@ -73,9 +72,6 @@ def collect_runs():
     for path in sorted(METRICS_DIR.glob("*_history.json")):
         history = _load_json(path)
         run_name = history.get("run_name")
-        # skip runs from before the naming change, which carry no metadata, and
-        # the copies the notebook makes of the winners under a plain model name,
-        # which would otherwise count the same training twice
         if run_name is None or path.name != f"{run_name}_history.json":
             continue
 
@@ -95,7 +91,6 @@ def collect_runs():
             "best_epoch": best + 1,
             "best_val_loss": history["val_loss"][best],
             "best_val_accuracy": history["val_accuracy"][best],
-            # positive means the model does better on train than on validation
             "train_val_gap": history["accuracy"][best] - history["val_accuracy"][best],
             "total_params": total,
             "trainable_params": trainable,
@@ -120,7 +115,6 @@ def collect_runs():
 
         row["accuracy_drop"] = row["accuracy_fer2013"] - row["accuracy_fane"]
         row["macro_f1_drop"] = row["macro_f1_fer2013"] - row["macro_f1_fane"]
-        # how much of the macro-F1 is lost, which compares models of different strength
         row["macro_f1_drop_pct"] = 100 * row["macro_f1_drop"] / row["macro_f1_fer2013"]
         rows.append(row)
 
@@ -211,7 +205,6 @@ def plot_finetune_strategy(runs):
 
     families = list(subset["family"])
     values = {DATASET_LABELS[d]: list(subset[f"macro_f1_{d}"]) for d in DATASETS}
-    # the share of trainable weights is what actually changes between the bars
     tick_labels = [
         f"{family.replace('xception_', '')}\n{pct:.1f}% trainable"
         for family, pct in zip(families, subset["trainable_pct"])
