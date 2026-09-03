@@ -102,6 +102,8 @@ def collect_runs():
         row["macro_f1_drop_pct"] = 100 * row["macro_f1_drop"] / row["macro_f1_fer2013"]
         rows.append(row)
 
+    if not rows:
+        return pd.DataFrame()
     return pd.DataFrame(rows).sort_values(["model", "family", "batch_size"])
 
 
