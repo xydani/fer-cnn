@@ -77,6 +77,16 @@ def plot_training_curves():
         axes[1].plot(best + 1, h["val_accuracy"][best], "o", color=colour,
                      markersize=7, markeredgecolor="white", markeredgewidth=1.5)
 
+        # where the frozen head phase ends and fine-tuning starts
+        warmup = h.get("warmup_epochs")
+        if warmup:
+            for ax in axes:
+                ax.axvline(warmup + 0.5, color=colour, linewidth=1,
+                           linestyle=":", alpha=0.8)
+            axes[0].annotate("fine-tuning", (warmup + 0.5, 1), xycoords=("data", "axes fraction"),
+                             textcoords="offset points", xytext=(4, -10),
+                             fontsize=8, color=colour)
+
     axes[0].set_title("Loss", color=INK, fontsize=12)
     axes[1].set_title("Accuracy", color=INK, fontsize=12)
     for ax in axes:
