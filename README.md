@@ -1,4 +1,4 @@
-# Facial Emotion Recognition: A Comparative Study between Custom CNNs and Fine-Tuned Xception
+# Facial Emotion Recognition: A Comparative Study between a Custom CNN and Fine-Tuned Xception
 
 ## Project Overview
 This repository contains the code and resources for a comparative study on Facial Emotion Recognition (FER). The goal is to classify human faces into 7 standard emotional categories (Angry, Disgust, Fear, Happy, Sad, Surprise, Neutral). 
