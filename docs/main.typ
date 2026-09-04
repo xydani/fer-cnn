@@ -5,8 +5,6 @@
   authors: (
     (name: "Daniele Lurani", email: "60/73/65357", affiliation: "Università degli Studi di Cagliari"),
   ),
-  // Insert your abstract after the colon, wrapped in brackets.
-  // Example: `abstract: [This is my abstract...]`
   abstract: "Il riconoscimento automatico delle espressioni facciali (FER) raggiunge accuracy
 elevate quando training e valutazione provengono dallo stesso dataset, mentre la
 robustezza al cambio di dominio resta meno documentata. Questo lavoro confronta due approcci sulle 7 classi emotive standard, una rete convoluzionale residuale addestrata da zero e una Xception pre-addestrata su ImageNet adattata tramite fine-tuning. Per Xception sono state provate tre strategie, che si differenziano per la presenza di una fase di warm-up e per quanta parte della rete viene riaddestrata, il 24,6% dei parametri oppure il 99,5%. Tutti i modelli sono addestrati solo su FER-2013 e valutati sia sul relativo test set sia, senza alcun riadattamento, su FANE. La selezione avviene su uno split di validation ricavato dal training set, così che entrambi i test set restino inutilizzati fino alla valutazione finale. Poiché nei due dataset le classi sono rappresentate in proporzioni molto diverse, i risultati sono riportati in accuracy, macro-F1 e weighted F1. Il fine-tuning completo è il modello migliore su entrambi i dataset e supera la rete addestrata da zero di 4,74 punti percentuali di accuracy su FER-2013 (IC 95% ±1,57) e di 3,00 punti su FANE (±1,11). Il fine-tuning parziale resta invece sotto la rete custom, quindi il vantaggio dei pesi pre-addestrati emerge solo quando gran parte della rete è libera di adattarsi. La fase di warm-up non produce differenze apprezzabili. Il divario di generalizzazione però non cambia. La differenza fra i due gap di accuracy è di 1,74 punti (±1,93), statisticamente indistinguibile da zero, e la macro-F1 cala del 43,5% per la rete custom contro il 45,4% di Xception. Il pre-addestramento su ImageNet migliora quindi le prestazioni assolute ma non la robustezza al cambio di dominio, che dipende dalle differenze fra i due dataset più che dall'architettura.
@@ -138,7 +136,7 @@ L'addestramento è stato svolto su FER-2013, che mette a disposizione 28.709 imm
 
 La valutazione fuori dominio è stata condotta su FANE, che copre le stesse sette categorie ma è molto diverso nella forma. Le immagini sono a colori, hanno risoluzione maggiore e non seguono un ritaglio uniforme. Il dataset contiene in realtà nove cartelle, perché include anche le classi confused e shy, che sono state escluse dall'analisi. La ragione è semplice, dato che un modello addestrato su FER-2013 conosce soltanto sette categorie e non ha alcun modo di prevedere le altre due. Tenerle avrebbe prodotto errori sistematici che non dipendono dal cambio di dominio ma dal fatto che il modello non è stato costruito per riconoscerle, e questo avrebbe falsato la misura.
 
-Dopo l'esclusione delle due classi restano 14.394 immagini utilizzabili. Il conteggio tiene già conto di un file scartato perché non è un'immagine valida, un problema descritto più avanti nella sezione dedicata alla qualità dei dati.
+Dopo l'esclusione delle due classi restano 14.394 immagini utilizzabili. Il conteggio tiene già conto di un file scartato perché non è un'immagine valida, un problema descritto più avanti nella sezione dedicata alla qualità dei dati. I conteggi per classe sono riportati nella @tab:conteggi-classi.
 
 
 #figure(
@@ -188,7 +186,7 @@ Il confronto diretto fra le due composizioni è riportato nella @fig:bilanciamen
   ],
 ) <fig:bilanciamento>
 
-Le differenze sono marcate. La classe disgust rappresenta appena l'1,5 per cento di FER-2013 e sale al 9,6 per cento in FANE, quindi il suo peso aumenta di oltre sei volte. In direzione opposta la classe happy scende dal 25,1 al 13,3 per cento, e fear passa dal 14,3 al 20,2. Anche le altre classi si spostano, seppure in misura minore.
+Le differenze sono marcate. La classe disgust rappresenta appena l'1,5 per cento di FER-2013 e sale al 9,6 per cento in FANE, quindi il suo peso aumenta di oltre sei volte. In direzione opposta la classe happy scende dal 25,1 al 13,3 per cento, e fear passa dal 14,3 al 20,1. Anche le altre classi si spostano, seppure in misura minore.
 
 Questo ha una conseguenza diretta sulla scelta della metrica. L'accuracy conta semplicemente quante immagini sono state classificate correttamente, quindi le classi più numerose incidono di più sul risultato finale. Se la composizione cambia fra i due dataset, l'accuracy cambia in parte anche solo per questo motivo, indipendentemente da quanto il modello sia effettivamente peggiorato. Confrontare l'accuracy su FER-2013 con quella su FANE significherebbe quindi mescolare il calo di prestazioni con il cambio di composizione. È la ragione per cui i risultati vengono riportati anche in macro-F1, una metrica che assegna lo stesso peso a tutte le classi e che viene descritta nella sezione dedicata alle metriche.
 
@@ -225,7 +223,7 @@ FANE presenta invece un problema diverso, legato alla sua eterogeneità. Accanto
 
 == Preprocessing
 
-I due modelli richiedono immagini in formati diversi, quindi la pipeline di caricamento prevede due rami distinti che vengono scelti in base al modello da addestrare.
+I due modelli richiedono immagini in formati diversi, quindi la pipeline di caricamento prevede due rami distinti che vengono scelti in base al modello da addestrare, riassunti nella @tab:preprocessing.
 
 
 #figure(
@@ -288,7 +286,8 @@ valori, e su dati convoluzionali questo è più efficace, perché i pixel vicini
 sono fortemente correlati e disattivarli uno alla volta lascia comunque passare
 l'informazione. La percentuale cresce perché i blocchi più profondi hanno molti
 più parametri e tendono a specializzarsi di più. A questo si aggiunge una
-regolarizzazione L2 applicata a tutti i pesi convoluzionali e densi.
+regolarizzazione L2 applicata a tutti i pesi convoluzionali e densi. La
+@tab:architettura-cnn ne riassume la struttura.
 
 #figure(
   table(
@@ -325,7 +324,7 @@ conservativo si riaddestra solo la testa di classificazione, lasciando la rete
 pre-addestrata a fare da estrattore di caratteristiche fisso. All'estremo opposto
 si riaddestra tutto. In mezzo si può scongelare a partire da un livello
 qualsiasi, e più ci si sposta verso l'ingresso più parametri diventano liberi di
-adattarsi.
+adattarsi. La @tab:sblocco riporta le tre profondità considerate.
 
 #figure(
   table(
@@ -522,12 +521,11 @@ il lavoro vuole misurare. Un modello addestrato su un dataset in cui disgust val
 l'uno e mezzo per cento eredita quella proporzione e se la porta dietro anche
 quando viene applicato a un dataset in cui la stessa classe è oltre sei volte più
 frequente. Riequilibrare i dati avrebbe nascosto proprio il fenomeno che i
-risultati mettono in evidenza. Resta il fatto che una terza strada, il class
-weighting, non è stata provata, e il punto viene ripreso fra i limiti del lavoro.
+risultati mettono in evidenza.
 
 Resta una terza strada, il class weighting, che pesa le classi nella funzione di
-perdita senza toccare i dati. Non è stata adottata perché attenuerebbe il prior che il modello eredita dal dataset
-sorgente, che è uno dei fenomeni che il lavoro vuole osservare.
+perdita senza toccare i dati. Non è stata adottata per la stessa ragione, perché
+attenuerebbe il prior che il modello eredita dal dataset sorgente.
 
 
 = Risultati
@@ -538,7 +536,8 @@ Nessuna delle cinque configurazioni ha raggiunto il tetto di 100 epoche, perché
 l'early stopping è sempre intervenuto prima. È un dettaglio importante, perché
 significa che i modelli si sono fermati per convergenza e non perché il budget
 fosse esaurito. Un addestramento troncato lascerebbe il dubbio che con più tempo
-il risultato sarebbe migliorato, dubbio che in questo caso non si pone.
+il risultato sarebbe migliorato, dubbio che in questo caso non si pone. La
+@tab:addestramento riassume l'andamento delle cinque run.
 
 #figure(
   table(
@@ -583,7 +582,8 @@ modello va meglio sui dati che ha già visto. Per la CNN custom è negativo, cio
 la validazione va leggermente meglio dell'addestramento. Non è un errore, dipende
 dal fatto che le metriche di addestramento sono calcolate sulle immagini
 trasformate dall'augmentation, che sono più difficili di quelle originali usate
-in validazione.
+in validazione. La @fig:curve riporta le curve complete dei due modelli
+selezionati.
 
 == Confronto fra le configurazioni
 
@@ -638,6 +638,7 @@ risultato più netto del lavoro.
   ],
 ) <fig:curve-strategie>
 
+La @fig:strategie e la @fig:curve-strategie mostrano l'effetto della scelta.
 Passando dal 24,6 al 99,5 per cento di parametri addestrabili l'accuracy su
 FER-2013 sale dal 52,80 al 65,85 per cento e la macro-F1 da 0,4697 a 0,6210. Il
 guadagno si ripete su FANE, dove l'accuracy passa dal 29,51 al 37,62 per cento.
@@ -660,7 +661,8 @@ Il terzo confronto riguarda il batch size sulla CNN custom.
   ],
 ) <fig:batch>
 
-Con lotti da 64 la rete ottiene 61,12 per cento di accuracy su FER-2013 contro
+Il confronto è nella @fig:batch. Con lotti da 64 la rete ottiene 61,12 per cento
+di accuracy su FER-2013 contro
 55,91, cioè 5,21 punti in più, e la macro-F1 sale da 0,4481 a 0,5203. Su FANE la
 differenza sparisce, con 34,62 contro 34,83 per cento. Il batch size più grande
 aiuta quindi in dominio senza cambiare nulla fuori dominio.
@@ -679,7 +681,7 @@ seguono si riferiscono a queste due.
 Xception con fine-tuning completo raggiunge il 65,85 per cento di accuracy su
 FER-2013, un valore che va letto insieme ai riferimenti dello stato dell'arte. Si
 colloca sostanzialmente sulla prestazione stimata degli annotatori umani e circa
-cinque punti sotto i modelli migliori pubblicati in letteratura, un risultato considerabile come buono.
+cinque punti sotto i modelli migliori pubblicati in letteratura, un buon risultato.
 
 La CNN custom si ferma al 61,12 per cento. La differenza vale 4,74 punti
 percentuali con un intervallo di confidenza al 95 per cento di ±1,57, quindi al di
@@ -757,7 +759,7 @@ indizio del fatto che il problema non dipenda dall'architettura scelta.
 == Divario di generalizzazione
 
 Mettendo a confronto le prestazioni dentro e fuori dominio si ottiene il risultato
-centrale del lavoro.
+centrale del lavoro, riassunto nella @tab:divario.
 
 #figure(
   table(
@@ -793,7 +795,8 @@ generalizzi meglio dell'altro.
   ],
 ) <fig:pendenza>
 
-Lo stesso confronto in macro-F1 racconta la stessa cosa. La CNN custom perde 22,62
+Lo stesso confronto in macro-F1, riportato nella @fig:pendenza, racconta la stessa
+cosa. La CNN custom perde 22,62
 punti, pari al 43,5 per cento del valore di partenza, e Xception ne perde 28,17,
 pari al 45,4 per cento. In termini relativi le due perdite sono quindi molto
 vicine, e Xception paga in valore assoluto una caduta maggiore soltanto perché
@@ -830,8 +833,10 @@ L'ultimo livello di dettaglio riguarda il comportamento sulle singole classi.
 ) <tab:f1-classi>
 
 La cosa più evidente è che i due modelli ordinano le classi quasi allo stesso
-modo. In tutte e quattro le colonne happy è la classe con l'F1 più alta e disgust
-quella con l'F1 più bassa, con surprise stabilmente al secondo posto. La
+modo. In tutte e quattro le colonne happy è la classe con l'F1 più alta, e le due
+più basse sono sempre disgust e fear, in un ordine o nell'altro. Cambia invece il
+secondo posto, occupato da surprise in dominio e da neutral su FANE, perché
+surprise è fra le classi che perdono di più. La
 correlazione fra i recall per classe dei due modelli su FANE vale 0,989, quindi i
 due sbagliano sostanzialmente sulle stesse immagini.
 
@@ -852,7 +857,7 @@ trasferirla altrove.
 == Costo computazionale
 
 L'addestramento complessivo delle cinque configurazioni ha richiesto circa un'ora
-e mezza di GPU.
+e mezza di GPU, con il dettaglio nella @tab:tempi.
 
 #figure(
   table(
