@@ -4,7 +4,7 @@ import os
 import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from config import FER_DIR, FANE_DIR, IMG_SIZE, BATCH_SIZE, SEED, CLASS_NAMES, VAL_SPLIT
+from config import FER_DIR, FANE_DIR, IMG_SIZE, XCEPTION_IMG_SIZE, BATCH_SIZE, SEED, CLASS_NAMES, VAL_SPLIT
 
 AUTOTUNE = tf.data.AUTOTUNE
 SHUFFLE_BUFFER = 8192
@@ -14,7 +14,7 @@ def _get_target_config(model_type):
     if model_type == "custom_cnn":
         return "grayscale", IMG_SIZE
     elif model_type == "xception":
-        return "rgb", (71, 71)
+        return "rgb", XCEPTION_IMG_SIZE
     else:
         raise ValueError("Model type must be 'custom_cnn' or 'xception'")
 

@@ -4,7 +4,7 @@ import sys
 import os
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from config import NUM_CLASSES
+from config import NUM_CLASSES, XCEPTION_IMG_SIZE
 
 L2 = regularizers.l2(1e-4)
 
@@ -13,7 +13,7 @@ FINE_TUNE_FROM = "block14_sepconv1"
 FINE_TUNE_ALL = "all"
 
 
-def build_finetuned_model(input_shape=(71, 71, 3), fine_tune_from=FINE_TUNE_FROM):
+def build_finetuned_model(input_shape=(*XCEPTION_IMG_SIZE, 3), fine_tune_from=FINE_TUNE_FROM):
     base = tf.keras.applications.Xception(
         weights="imagenet",
         include_top=False,

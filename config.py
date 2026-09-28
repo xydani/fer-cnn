@@ -21,6 +21,7 @@ MODELS_DIR = ROOT_DIR / "models_saved"
 RESULTS_DIR = ROOT_DIR / "results"
 
 IMG_SIZE = (48, 48)
+XCEPTION_IMG_SIZE = (71, 71)
 NUM_CLASSES = 7
 
 CLASS_NAMES = ["angry", "disgust", "fear", "happy", "neutral", "sad", "surprise"]
