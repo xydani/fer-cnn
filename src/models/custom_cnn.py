@@ -1,4 +1,3 @@
-import tensorflow as tf
 from tensorflow.keras import layers, models, regularizers
 import sys
 import os
@@ -14,7 +13,7 @@ def fer_resnet(input_shape=(IMG_SIZE[0], IMG_SIZE[1], 1)):
     def conv_bn_act(x, filters):
         x = layers.Conv2D(filters, (3, 3), padding='same', use_bias=False, kernel_regularizer=L2)(x)
         x = layers.BatchNormalization()(x)
-        x = layers.LeakyReLU(alpha=0.1)(x)
+        x = layers.LeakyReLU(negative_slope=0.1)(x)
         return x
 
     def residual_block(x, filters, dropout_rate):
@@ -24,13 +23,13 @@ def fer_resnet(input_shape=(IMG_SIZE[0], IMG_SIZE[1], 1)):
         x = conv_bn_act(x, filters)
 
         if shortcut.shape[-1] != filters:
-            shortcut = layers.Conv2D(filters, (1, 1), padding='same', use_bias=False, kernel_regularizer=L2)(shortcut)
+            shortcut = layers.Conv2D(filters, (1, 1), use_bias=False, kernel_regularizer=L2)(shortcut)
             shortcut = layers.BatchNormalization()(shortcut)
 
         x = layers.Add()([x, shortcut])
-        x = layers.LeakyReLU(alpha=0.1)(x)
+        x = layers.LeakyReLU(negative_slope=0.1)(x)
 
-        x = layers.MaxPooling2D(pool_size=(2, 2))(x)
+        x = layers.MaxPooling2D()(x)
 
         x = layers.SpatialDropout2D(dropout_rate)(x)
         return x
@@ -47,7 +46,7 @@ def fer_resnet(input_shape=(IMG_SIZE[0], IMG_SIZE[1], 1)):
 
     x = layers.Dense(256, use_bias=False, kernel_regularizer=L2)(x)
     x = layers.BatchNormalization()(x)
-    x = layers.LeakyReLU(alpha=0.1)(x)
+    x = layers.LeakyReLU(negative_slope=0.1)(x)
     x = layers.Dropout(0.5)(x)
 
     outputs = layers.Dense(NUM_CLASSES, activation='softmax', kernel_regularizer=L2)(x)
